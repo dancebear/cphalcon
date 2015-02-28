@@ -112,7 +112,7 @@ abstract class Dialect
 	 * @param string escapeChar
 	 * @return string
 	 */
-	public final function getSqlExpression(array! expression, string escapeChar=null) -> string
+	public function getSqlExpression(array! expression, var escapeChar = null) -> string
 	{
 		var type, domain, operator, left, right, name, sqlItems,
 			escapedName, sqlArguments, arguments, argument, item;
@@ -179,18 +179,20 @@ abstract class Dialect
 			let operator = expression["op"];
 
 			/**
-			 * Some unary operators uses the left operand...
+			 * Some unary operators use the left operand...
 			 */
 			if fetch left, expression["left"] {
 				return this->getSqlExpression(left, escapeChar) . operator;
 			}
 
 			/**
-			 * ...Others uses the right operand
+			 * ...Others use the right operand
 			 */
 			if fetch right, expression["right"] {
-				return this->getSqlExpression(right, escapeChar) . operator;
+				return operator . this->getSqlExpression(right, escapeChar);
 			}
+
+			throw new Exception("Invalid SQL-unary expression");
 		}
 
 		/**
@@ -218,9 +220,8 @@ abstract class Dialect
 					let sqlArguments[] = this->getSqlExpression(argument, escapeChar);
 				}
 				return name . "(" . join(", ", sqlArguments) . ")";
-			} else {
-				return name . "()";
 			}
+			return name . "()";
 		}
 
 		/**
@@ -270,13 +271,13 @@ abstract class Dialect
 	}
 
 	/**
-	 * Transform an intermediate representation for a schema/table into a database system valid expression
+	 * Transform an intermediate representation of a schema/table into a database system valid expression
 	 *
 	 * @param array table
 	 * @param string escapeChar
 	 * @return string
 	 */
-	public final function getSqlTable(var table, string escapeChar=null) -> string
+	public final function getSqlTable(var table, string escapeChar = null) -> string
 	{
 		var sqlTable, sqlSchema, aliasName, sqlTableAlias,
 			schemaName, tableName;
@@ -461,11 +462,15 @@ abstract class Dialect
 				 */
 				if fetch joinConditionsArray, join["conditions"] {
 					if count(joinConditionsArray) {
-						let joinExpressions = [];
-						for joinCondition in joinConditionsArray {
-							let joinExpressions[] = this->getSqlExpression(joinCondition, escapeChar);
+						if !isset joinConditionsArray[0] {
+							let sqlJoin .= " ON " . this->getSqlExpression(joinConditionsArray, escapeChar) . " ";
+						} else {
+							let joinExpressions = [];
+							for joinCondition in joinConditionsArray {
+								let joinExpressions[] = this->getSqlExpression(joinCondition, escapeChar);
+							}
+							let sqlJoin .= " ON " . join(" AND ", joinExpressions) . " ";
 						}
-						let sqlJoin .= " ON " . join(" AND ", joinExpressions) . " ";
 					}
 				}
 				let sql .= sqlJoin;
@@ -490,7 +495,11 @@ abstract class Dialect
 
 			let groupItems = [];
 			for groupField in groupFields {
-				let groupItems[] = this->getSqlExpression(groupField, escapeChar);
+				if typeof groupField == "array" {
+					let groupItems[] = this->getSqlExpression(groupField, escapeChar);
+				} else {
+					throw new Exception("?");
+				}
 			}
 			let sql .= " GROUP BY " . join(", ", groupItems);
 
@@ -498,7 +507,11 @@ abstract class Dialect
 			 * Check for a HAVING clause
 			 */
 			if fetch havingConditions, definition["having"] {
-				let sql .= " HAVING " . this->getSqlExpression(havingConditions, escapeChar);
+				if typeof havingConditions == "array" {
+					let sql .= " HAVING " . this->getSqlExpression(havingConditions, escapeChar);
+				} else {
+					throw new Exception("?");
+				}
 			}
 		}
 
@@ -509,7 +522,11 @@ abstract class Dialect
 			let orderItems = [];
 			for orderItem in orderFields {
 
-				let orderSqlItem = this->getSqlExpression(orderItem[0], escapeChar);
+				if typeof orderItem == "array" {
+					let orderSqlItem = this->getSqlExpression(orderItem[0], escapeChar);
+				} else {
+					throw new Exception("?");
+				}
 
 				/**
 				 * In the numeric 1 position could be a ASC/DESC clause
@@ -602,5 +619,4 @@ abstract class Dialect
 	{
 		return "ROLLBACK TO SAVEPOINT " . name;
 	}
-
 }

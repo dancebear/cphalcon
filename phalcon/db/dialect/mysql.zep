@@ -19,16 +19,20 @@
 
 namespace Phalcon\Db\Dialect;
 
+use Phalcon\Db\Dialect;
 use Phalcon\Db\Column;
 use Phalcon\Db\Exception;
 use Phalcon\Db\IndexInterface;
+use Phalcon\Db\ColumnInterface;
+use Phalcon\Db\ReferenceInterface;
+use Phalcon\Db\DialectInterface;
 
 /**
  * Phalcon\Db\Dialect\Mysql
  *
  * Generates database specific SQL for the MySQL RBDM
  */
-class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
+class MySQL extends Dialect implements DialectInterface
 {
 
 	protected _escapeChar = "`";
@@ -39,53 +43,81 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param Phalcon\Db\ColumnInterface column
 	 * @return string
 	 */
-	public function getColumnDefinition(<\Phalcon\Db\ColumnInterface> column) -> string
+	public function getColumnDefinition(<ColumnInterface> column) -> string
 	{
-		var columnSql, size, scale;
+		var columnSql, size, scale, type, typeValues;
 
 		if typeof column != "object" {
 			throw new Exception("Column definition must be an object compatible with Phalcon\\Db\\ColumnInterface");
 		}
 
-		switch column->getType() {
+		let columnSql = "";
+
+		let type = column->getType();
+		if typeof type == "string" {
+			let columnSql .= type;
+			let type = column->getTypeReference();
+		}
+
+		switch type {
 
 			case Column::TYPE_INTEGER:
-				let columnSql = "INT(" . column->getSize() . ")";
+				if empty columnSql {
+					let columnSql .= "INT";
+				}
+				let columnSql .= "(" . column->getSize() . ")";
 				if column->isUnsigned() {
 					let columnSql .= " UNSIGNED";
 				}
 				break;
 
 			case Column::TYPE_DATE:
-				let columnSql = "DATE";
+				if empty columnSql {
+					let columnSql .= "DATE";
+				}
 				break;
 
 			case Column::TYPE_VARCHAR:
-				let columnSql = "VARCHAR(" . column->getSize() . ")";
+				if empty columnSql {
+					let columnSql .= "VARCHAR";
+				}
+				let columnSql .= "(" . column->getSize() . ")";
 				break;
 
 			case Column::TYPE_DECIMAL:
-				let columnSql = "DECIMAL(" . column->getSize() . "," . column->getScale() . ")";
+				if empty columnSql {
+					let columnSql .= "DECIMAL";
+				}
+				let columnSql .= "(" . column->getSize() . "," . column->getScale() . ")";
 				if column->isUnsigned() {
 					let columnSql .= " UNSIGNED";
 				}
 				break;
 
 			case Column::TYPE_DATETIME:
-				let columnSql = "DATETIME";
+				if empty columnSql {
+					let columnSql .= "DATETIME";
+				}
 				break;
 
 			case Column::TYPE_CHAR:
-				let columnSql = "CHAR(" . column->getSize() . ")";
+				if empty columnSql {
+					let columnSql .= "CHAR";
+				}
+				let columnSql .= "(" . column->getSize() . ")";
 				break;
 
 			case Column::TYPE_TEXT:
-				let columnSql = "TEXT";
+				if empty columnSql {
+					let columnSql .= "TEXT";
+				}
 				break;
 
 			case Column::TYPE_FLOAT:
-				let columnSql = "FLOAT",
-					size = column->getSize();
+				if empty columnSql {
+					let columnSql .= "FLOAT";
+				}
+				let size = column->getSize();
 				if size {
 					let scale = column->getScale(),
 						columnSql .= "(" . size;
@@ -100,8 +132,30 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 				}
 				break;
 
+			case Column::TYPE_BOOLEAN:
+				if empty columnSql {
+					let columnSql .= "TINYINT(1)";
+				}
+				break;
+
 			default:
-				throw new Exception("Unrecognized MySQL data type");
+				if empty columnSql {
+					throw new Exception("Unrecognized MySQL data type");
+				}
+
+				let typeValues = column->getTypeValues();
+				if !empty typeValues {
+					if typeof typeValues == "array" {
+						var value, valueSql;
+						let valueSql = "";
+						for value in typeValues {
+							let valueSql .= "\"" . addcslashes(value, "\"") . "\", ";
+						}
+						let columnSql .= "(" . substr(valueSql, 0, -2) . ")";
+					} else {
+						let columnSql .= "(\"" . addcslashes(typeValues, "\"") . "\")";
+					}
+				}
 		}
 
 		return columnSql;
@@ -114,9 +168,9 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param	string schemaName
 	 * @param	Phalcon\Db\ColumnInterface column
 	 */
-	public function addColumn(string! tableName, string! schemaName, <\Phalcon\Db\ColumnInterface> column) -> string
+	public function addColumn(string! tableName, string! schemaName, <ColumnInterface> column) -> string
 	{
-		var afterPosition, sql;
+		var afterPosition, sql, defaultValue;
 
 		if typeof column != "object" {
 			throw new Exception("Column definition must be an object compatible with Phalcon\\Db\\ColumnInterface");
@@ -129,6 +183,11 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 		}
 
 		let sql .= "`" . column->getName() . "` " . this->getColumnDefinition(column);
+
+		let defaultValue = column->getDefault();
+		if ! empty defaultValue {
+			let sql .= " DEFAULT \"" . addcslashes(defaultValue, "\"") . "\"";
+		}
 
 		if column->isNotNull() {
 			let sql .= " NOT NULL";
@@ -153,9 +212,9 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param	Phalcon\Db\ColumnInterface column
 	 * @return	string
 	 */
-	public function modifyColumn(string! tableName, string! schemaName, <\Phalcon\Db\ColumnInterface> column) -> string
+	public function modifyColumn(string! tableName, string! schemaName, <ColumnInterface> column) -> string
 	{
-		var sql;
+		var sql, defaultValue;
 
 		if typeof column != "object" {
 			throw new Exception("Column definition must be an object compatible with Phalcon\\Db\\ColumnInterface");
@@ -168,6 +227,12 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 		}
 
 		let sql .= "`" . column->getName() . "` " . this->getColumnDefinition(column);
+
+		let defaultValue = column->getDefault();
+		if ! empty defaultValue {
+			let sql .= " DEFAULT \"" . addcslashes(defaultValue, "\"") . "\"";
+		}
+
 		if column->isNotNull() {
 			let sql .= " NOT NULL";
 		}
@@ -301,7 +366,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param	Phalcon\Db\ReferenceInterface reference
 	 * @return	string
 	 */
-	public function addForeignKey(string! tableName, string! schemaName, <\Phalcon\Db\ReferenceInterface> reference) -> string
+	public function addForeignKey(string! tableName, string! schemaName, <ReferenceInterface> reference) -> string
 	{
 		var sql, referencedSchema, onDelete, onUpdate;
 
@@ -424,7 +489,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 		var temporary, options, table, createLines, columns,
 			column, indexes, index, reference, references, indexName,
 			indexSql, sql, columnLine, indexType,
-			referenceSql, onDelete, onUpdate;
+			referenceSql, onDelete, onUpdate, defaultValue;
 
 		if !fetch columns, definition["columns"] {
 			throw new Exception("The index 'columns' is required in the definition array");
@@ -454,6 +519,14 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 		for column in columns {
 
 			let columnLine = "`" . column->getName() . "` " . this->getColumnDefinition(column);
+
+			/**
+			 * Add a Default clause
+			 */
+			let defaultValue = column->getDefault();
+			if ! empty defaultValue {
+				let columnLine .= " DEFAULT \"" . addcslashes(defaultValue, "\"") . "\"";
+			}
 
 			/**
 			 * Add a NOT NULL clause
@@ -627,7 +700,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param string schemaName
 	 * @return string
 	 */
-	public function tableExists(string! tableName, schemaName=null) -> string
+	public function tableExists(string! tableName, schemaName = null) -> string
 	{
 		if schemaName {
 			return "SELECT IF(COUNT(*)>0, 1 , 0) FROM `INFORMATION_SCHEMA`.`TABLES` WHERE `TABLE_NAME`= '" . tableName . "' AND `TABLE_SCHEMA` = '" . schemaName . "'";
@@ -642,7 +715,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param string schemaName
 	 * @return string
 	 */
-	public function viewExists(string! viewName, schemaName=null)
+	public function viewExists(string! viewName, schemaName = null)
 	{
 		if schemaName {
 			return "SELECT IF(COUNT(*)>0, 1 , 0) FROM `INFORMATION_SCHEMA`.`VIEWS` WHERE `TABLE_NAME`= '" . viewName . "' AND `TABLE_SCHEMA`='" . schemaName . "'";
@@ -661,7 +734,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param string schema
 	 * @return string
 	 */
-	public function describeColumns(string! table, schema=null) -> string
+	public function describeColumns(string! table, schema = null) -> string
 	{
 		if schema {
 			return "DESCRIBE `" . schema . "`.`" . table . "`";
@@ -679,7 +752,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param       string schemaName
 	 * @return      array
 	 */
-	public function listTables(string! schemaName=null) -> string
+	public function listTables(string! schemaName = null) -> string
 	{
 		if schemaName {
 			return "SHOW TABLES FROM `" . schemaName . "`";
@@ -693,7 +766,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param string schemaName
 	 * @return array
 	 */
-	public function listViews(string! schemaName=null) -> string
+	public function listViews(string! schemaName = null) -> string
 	{
 		if schemaName {
 			return "SELECT `TABLE_NAME` AS view_name FROM `INFORMATION_SCHEMA`.`VIEWS` WHERE `TABLE_SCHEMA` = '" . schemaName . "' ORDER BY view_name";
@@ -708,7 +781,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param	string schema
 	 * @return	string
 	 */
-	public function describeIndexes(string! table, schema=null) -> string
+	public function describeIndexes(string! table, schema = null) -> string
 	{
 		if schema {
 			return "SHOW INDEXES FROM `" . schema . "`.`" . table . "`";
@@ -723,7 +796,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param	string schema
 	 * @return	string
 	 */
-	public function describeReferences(string! table, schema=null) -> string
+	public function describeReferences(string! table, schema = null) -> string
 	{
 		var sql = "SELECT TABLE_NAME,COLUMN_NAME,CONSTRAINT_NAME,REFERENCED_TABLE_SCHEMA,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_NAME IS NOT NULL AND ";
 		if schema {
@@ -741,7 +814,7 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 	 * @param	string schema
 	 * @return	string
 	 */
-	public function tableOptions(string! table, schema=null) -> string
+	public function tableOptions(string! table, schema = null) -> string
 	{
 		var sql = "SELECT TABLES.TABLE_TYPE AS table_type,TABLES.AUTO_INCREMENT AS auto_increment,TABLES.ENGINE AS engine,TABLES.TABLE_COLLATION AS table_collation FROM INFORMATION_SCHEMA.TABLES WHERE ";
 		if schema {
@@ -749,5 +822,4 @@ class MySQL extends \Phalcon\Db\Dialect //implements Phalcon\Db\DialectInterface
 		}
 		return sql . "TABLES.TABLE_NAME = '" . table . "'";
 	}
-
 }

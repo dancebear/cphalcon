@@ -99,14 +99,14 @@ PHP_METHOD(Phalcon_Annotations_Reflection, __construct) {
 PHP_METHOD(Phalcon_Annotations_Reflection, getClassAnnotations) {
 
 	int ZEPHIR_LAST_CALL_STATUS;
-	zval *annotations, *reflectionData, *reflectionClass, *collection;
+	zval *annotations, *reflectionClass, *collection, *_0;
 
 	ZEPHIR_MM_GROW();
 
 	annotations = zephir_fetch_nproperty_this(this_ptr, SL("_classAnnotations"), PH_NOISY_CC);
 	if (Z_TYPE_P(annotations) != IS_OBJECT) {
-		reflectionData = zephir_fetch_nproperty_this(this_ptr, SL("_reflectionData"), PH_NOISY_CC);
-		if (zephir_array_isset_string_fetch(&reflectionClass, reflectionData, SS("class"), 1 TSRMLS_CC)) {
+		_0 = zephir_fetch_nproperty_this(this_ptr, SL("_reflectionData"), PH_NOISY_CC);
+		if (zephir_array_isset_string_fetch(&reflectionClass, _0, SS("class"), 1 TSRMLS_CC)) {
 			ZEPHIR_INIT_VAR(collection);
 			object_init_ex(collection, phalcon_annotations_collection_ce);
 			ZEPHIR_CALL_METHOD(NULL, collection, "__construct", NULL, reflectionClass);
@@ -145,14 +145,14 @@ PHP_METHOD(Phalcon_Annotations_Reflection, getMethodsAnnotations) {
 			if (zephir_fast_count_int(reflectionMethods TSRMLS_CC)) {
 				ZEPHIR_INIT_VAR(collections);
 				array_init(collections);
-				zephir_is_iterable(reflectionMethods, &_2, &_1, 0, 0);
+				zephir_is_iterable(reflectionMethods, &_2, &_1, 0, 0, "phalcon/annotations/reflection.zep", 105);
 				for (
 				  ; zephir_hash_get_current_data_ex(_2, (void**) &_3, &_1) == SUCCESS
 				  ; zephir_hash_move_forward_ex(_2, &_1)
 				) {
 					ZEPHIR_GET_HMKEY(methodName, _2, _1);
 					ZEPHIR_GET_HVALUE(reflectionMethod, _3);
-					ZEPHIR_INIT_LNVAR(_4);
+					ZEPHIR_INIT_NVAR(_4);
 					object_init_ex(_4, phalcon_annotations_collection_ce);
 					ZEPHIR_CALL_METHOD(NULL, _4, "__construct", &_5, reflectionMethod);
 					zephir_check_call_status();
@@ -193,14 +193,14 @@ PHP_METHOD(Phalcon_Annotations_Reflection, getPropertiesAnnotations) {
 			if (zephir_fast_count_int(reflectionProperties TSRMLS_CC)) {
 				ZEPHIR_INIT_VAR(collections);
 				array_init(collections);
-				zephir_is_iterable(reflectionProperties, &_2, &_1, 0, 0);
+				zephir_is_iterable(reflectionProperties, &_2, &_1, 0, 0, "phalcon/annotations/reflection.zep", 133);
 				for (
 				  ; zephir_hash_get_current_data_ex(_2, (void**) &_3, &_1) == SUCCESS
 				  ; zephir_hash_move_forward_ex(_2, &_1)
 				) {
 					ZEPHIR_GET_HMKEY(property, _2, _1);
 					ZEPHIR_GET_HVALUE(reflectionProperty, _3);
-					ZEPHIR_INIT_LNVAR(_4);
+					ZEPHIR_INIT_NVAR(_4);
 					object_init_ex(_4, phalcon_annotations_collection_ce);
 					ZEPHIR_CALL_METHOD(NULL, _4, "__construct", &_5, reflectionProperty);
 					zephir_check_call_status();

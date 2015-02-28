@@ -35,7 +35,7 @@ abstract class Formatter
 	 * @param  integer type
 	 * @return string
 	 */
-	public function getTypeString(int type)
+	public function getTypeString(int type) -> string
 	{
 		switch type {
 
@@ -63,15 +63,35 @@ abstract class Formatter
 			case Logger::INFO:
 				return "INFO";
 
-			case Logger::EMERGENCE:
-				return "EMERGENCE";
+			case Logger::EMERGENCY:
+				return "EMERGENCY";
 
 			case Logger::SPECIAL:
 				return "SPECIAL";
-
-			default:
-				return "CUSTOM";
 		}
+
+		return "CUSTOM";
+	}
+
+	/**
+	 * Interpolates context values into the message placeholders
+	 *
+	 * @see http://www.php-fig.org/psr/psr-3/ Section 1.2 Message
+	 * @param string $message
+	 * @param array $context
+	 */
+	public function interpolate(string message, var context = null)
+	{
+		var replace, key, value;
+
+		if typeof context == "array" && count(context) > 0 {
+			let replace = [];
+			for key, value in context {
+				let replace["{" . key . "}"] = value;
+			}
+			return strtr(message, replace);
+		}
+		return message;
 	}
 
 }

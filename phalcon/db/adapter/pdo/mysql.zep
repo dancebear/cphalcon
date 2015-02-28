@@ -20,6 +20,7 @@
 namespace Phalcon\Db\Adapter\Pdo;
 
 use Phalcon\Db\Column;
+use Phalcon\Db\AdapterInterface;
 
 /**
  * Phalcon\Db\Adapter\Pdo\Mysql
@@ -40,7 +41,7 @@ use Phalcon\Db\Column;
  *
  *</code>
  */
-class Mysql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInterface
+class Mysql extends \Phalcon\Db\Adapter\Pdo implements AdapterInterface
 {
 
 	protected _type = "mysql";
@@ -252,6 +253,13 @@ class Mysql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInterf
 			}
 
 			/**
+			 * Check if the column is default values
+			 */
+			if typeof field[4] != "null" {
+				let definition["default"] = field[4];
+			}
+
+			/**
 			 * Every route is stored as a Phalcon\Db\Column
 			 */
 			let columnName = field[0],
@@ -261,5 +269,4 @@ class Mysql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInterf
 
 		return columns;
 	}
-
 }

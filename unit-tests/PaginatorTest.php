@@ -4,7 +4,7 @@
   +------------------------------------------------------------------------+
   | Phalcon Framework                                                      |
   +------------------------------------------------------------------------+
-  | Copyright (c) 2011-2012 Phalcon Team (http://www.phalconphp.com)       |
+  | Copyright (c) 2011-2014 Phalcon Team (http://www.phalconphp.com)       |
   +------------------------------------------------------------------------+
   | This source file is subject to the New BSD License that is bundled     |
   | with this package in the file docs/LICENSE.txt.                        |
@@ -355,6 +355,9 @@ class PaginatorTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($page->current, 1);
 		$this->assertEquals($page->total_pages, 218);
 
+		$this->assertInternalType('int', $page->total_items);
+		$this->assertInternalType('int', $page->total_pages);
+
 		//Middle page
 		$paginator->setCurrentPage(100);
 
@@ -371,6 +374,9 @@ class PaginatorTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($page->current, 100);
 		$this->assertEquals($page->total_pages, 218);
 
+		$this->assertInternalType('int', $page->total_items);
+		$this->assertInternalType('int', $page->total_pages);
+
 		//Last page
 		$paginator->setCurrentPage(218);
 
@@ -386,6 +392,9 @@ class PaginatorTest extends PHPUnit_Framework_TestCase
 
 		$this->assertEquals($page->current, 218);
 		$this->assertEquals($page->total_pages, 218);
+
+		$this->assertInternalType('int', $page->total_items);
+		$this->assertInternalType('int', $page->total_pages);
 
 		// test of getter/setters of querybuilder adapter
 

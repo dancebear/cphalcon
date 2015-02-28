@@ -57,6 +57,20 @@ interface ColumnInterface
 	public function getType();
 
 	/**
+	 * Returns column type reference
+	 *
+	 * @return int
+	 */
+	public function getTypeReference();
+
+	/**
+	 * Returns column type values
+	 *
+	 * @return int
+	 */
+	public function getTypeValues();
+
+	/**
 	 * Returns column size
 	 *
 	 * @return int
@@ -127,11 +141,18 @@ interface ColumnInterface
 	public function getBindType();
 
 	/**
+	 * Returns default value of column
+	 *
+	 * @return int
+	 */
+	public function getDefault();
+
+	/**
 	 * Restores the internal state of a Phalcon\Db\Column object
 	 *
 	 * @param array data
 	 * @return \Phalcon\Db\ColumnInterface
 	 */
-	public static function __set_state(data) -> <\Phalcon\Db\ColumnInterface>;
+	public static function __set_state(array! data) -> <ColumnInterface>;
 
 }

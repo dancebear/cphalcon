@@ -4,7 +4,7 @@
   +------------------------------------------------------------------------+
   | Phalcon Framework                                                      |
   +------------------------------------------------------------------------+
-  | Copyright (c) 2011-2012 Phalcon Team (http://www.phalconphp.com)       |
+  | Copyright (c) 2011-2014 Phalcon Team (http://www.phalconphp.com)       |
   +------------------------------------------------------------------------+
   | This source file is subject to the New BSD License that is bundled     |
   | with this package in the file docs/LICENSE.txt.                        |
@@ -274,6 +274,10 @@ class ViewTest extends PHPUnit_Framework_TestCase
 		$view->finish();
 
 		$this->assertEquals('<!DOCTYPE html><html>Hey, this is a partial, also le-this</html>' . PHP_EOL, $view->getContent());
+
+
+		// Retrieve a partial as a string
+		$this->assertEquals('Hey, this is a partial, also le-this', $view->getPartial('partials/_partial1', array('cool_var' => 'le-this')));
 
 	}
 

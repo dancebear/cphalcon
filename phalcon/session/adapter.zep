@@ -38,7 +38,7 @@ abstract class Adapter
 	 *
 	 * @param array options
 	 */
-	public function __construct(options=null)
+	public function __construct(options = null)
 	{
 		if typeof options == "array" {
 			this->setOptions(options);
@@ -71,13 +71,9 @@ abstract class Adapter
 	 *
 	 * @param array options
 	 */
-	public function setOptions(options)
+	public function setOptions(array! options)
 	{
 		var uniqueId;
-
-		if typeof options != "array" {
-			throw new Exception("Options must be an Array");
-		}
 
 		if fetch uniqueId, options["uniqueId"] {
 			let this->_uniqueId = uniqueId;
@@ -104,7 +100,7 @@ abstract class Adapter
 	 * @param boolean remove
 	 * @return mixed
 	 */
-	public function get(string index, defaultValue=null, remove=false)
+	public function get(string index, defaultValue = null, boolean remove = false)
 	{
 		var value, key;
 
@@ -143,7 +139,6 @@ abstract class Adapter
 	 *</code>
 	 *
 	 * @param string index
-	 * @return boolean
 	 */
 	public function has(string index) -> boolean
 	{
@@ -156,8 +151,6 @@ abstract class Adapter
 	 *<code>
 	 *	$session->remove('auth');
 	 *</code>
-	 *
-	 * @param string index
 	 */
 	public function remove(string index)
 	{
@@ -170,12 +163,24 @@ abstract class Adapter
 	 *<code>
 	 *	echo $session->getId();
 	 *</code>
-	 *
-	 * @return string
 	 */
 	public function getId() -> string
 	{
 		return session_id();
+	}
+	
+	/**
+	 * Set the current session id
+	 *
+	 *<code>
+	 *	$session->setId($id);
+	 *</code>
+	 *
+	 * @param string id
+	 */
+	public function setId(string id)
+	{
+		session_id(id);
 	}
 
 	/**
@@ -184,8 +189,6 @@ abstract class Adapter
 	 *<code>
 	 *	var_dump($session->isStarted());
 	 *</code>
-	 *
-	 * @return boolean
 	 */
 	public function isStarted() -> boolean
 	{
@@ -198,8 +201,6 @@ abstract class Adapter
 	 *<code>
 	 *	var_dump(session->destroy());
 	 *</code>
-	 *
-	 * @return boolean
 	 */
 	public function destroy() -> boolean
 	{
@@ -207,4 +208,43 @@ abstract class Adapter
 		return session_destroy();
 	}
 
+	/**
+	 * Alias: Gets a session variable from an application context
+	 *
+	 * @param string index
+	 * @return mixed
+	 */
+	public function __get(string index)
+	{
+		return this->get(index);
+	}
+
+	/**
+	 * Alias: Sets a session variable in an application context
+	 *
+	 * @param string index
+	 * @param string value
+	 */
+	public function __set(string index, value)
+	{
+		return this->set(index, value);
+	}
+
+	/**
+	 * Alias: Check whether a session variable is set in an application context
+	 *
+	 * @param string index
+	 */
+	public function __isset(string index) -> boolean
+	{
+		return this->has(index);
+	}
+
+	/**
+	 * Alias: Removes a session variable from an application context
+	 */
+	public function __unset(string index)
+	{
+		return this->remove(index);
+	}
 }

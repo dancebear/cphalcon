@@ -12,11 +12,14 @@
 #include <Zend/zend_interfaces.h>
 
 #include "kernel/main.h"
+#include "kernel/object.h"
 #include "kernel/exception.h"
 #include "kernel/fcall.h"
-#include "kernel/operators.h"
 #include "kernel/memory.h"
+#include "kernel/operators.h"
 #include "kernel/concat.h"
+#include "kernel/hash.h"
+#include "ext/spl/spl_exceptions.h"
 #include "kernel/array.h"
 
 
@@ -47,8 +50,9 @@ ZEPHIR_INIT_CLASS(Phalcon_Db_Dialect_Postgresql) {
 
 	ZEPHIR_REGISTER_CLASS_EX(Phalcon\\Db\\Dialect, Postgresql, phalcon, db_dialect_postgresql, phalcon_db_dialect_ce, phalcon_db_dialect_postgresql_method_entry, 0);
 
-	zend_declare_property_string(phalcon_db_dialect_postgresql_ce, SL("_escapeChar"), "\'", ZEND_ACC_PROTECTED TSRMLS_CC);
+	zend_declare_property_string(phalcon_db_dialect_postgresql_ce, SL("_escapeChar"), "\"", ZEND_ACC_PROTECTED TSRMLS_CC);
 
+	zend_class_implements(phalcon_db_dialect_postgresql_ce TSRMLS_CC, 1, phalcon_db_dialectinterface_ce);
 	return SUCCESS;
 
 }
@@ -61,72 +65,145 @@ ZEPHIR_INIT_CLASS(Phalcon_Db_Dialect_Postgresql) {
  */
 PHP_METHOD(Phalcon_Db_Dialect_Postgresql, getColumnDefinition) {
 
+	zephir_nts_static zephir_fcall_cache_entry *_6 = NULL, *_9 = NULL;
+	HashTable *_3;
+	HashPosition _2;
 	int ZEPHIR_LAST_CALL_STATUS;
-	zval *column, *size = NULL, *columnType = NULL, *columnSql = NULL, *_0 = NULL;
+	zval *column, *size = NULL, *columnType = NULL, *columnSql, *typeValues = NULL, *_0 = NULL, *_1 = NULL, *value = NULL, *valueSql, **_4, _5 = zval_used_for_init, _7, *_8 = NULL, *_10 = NULL;
 
 	ZEPHIR_MM_GROW();
 	zephir_fetch_params(1, 1, 0, &column);
 
 
 
-	if (Z_TYPE_P(column) != IS_OBJECT) {
-		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "Column definition must be an object compatible with Phalcon\\Db\\ColumnInterface", "phalcon/db/dialect/postgresql.zep", 44);
+	if (!(zephir_instance_of_ev(column, phalcon_db_columninterface_ce TSRMLS_CC))) {
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(spl_ce_InvalidArgumentException, "Parameter 'column' must be an instance of 'Phalcon\\Db\\ColumnInterface'", "", 0);
 		return;
 	}
-	ZEPHIR_CALL_METHOD(&size, column, "getsize",  NULL);
+	if (Z_TYPE_P(column) != IS_OBJECT) {
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "Column definition must be an object compatible with Phalcon\\Db\\ColumnInterface", "phalcon/db/dialect/postgresql.zep", 50);
+		return;
+	}
+	ZEPHIR_CALL_METHOD(&size, column, "getsize", NULL);
 	zephir_check_call_status();
-	ZEPHIR_CALL_METHOD(&columnType, column, "gettype",  NULL);
+	ZEPHIR_CALL_METHOD(&columnType, column, "gettype", NULL);
 	zephir_check_call_status();
+	ZEPHIR_INIT_VAR(columnSql);
+	ZVAL_STRING(columnSql, "", 1);
+	if (Z_TYPE_P(columnType) == IS_STRING) {
+		zephir_concat_self(&columnSql, columnType TSRMLS_CC);
+		ZEPHIR_CALL_METHOD(&columnType, column, "gettypereference", NULL);
+		zephir_check_call_status();
+	}
 	do {
 		if (ZEPHIR_IS_LONG(columnType, 0)) {
-			ZEPHIR_INIT_VAR(columnSql);
-			ZVAL_STRING(columnSql, "INT", 1);
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("INT") TSRMLS_CC);
+			}
 			break;
 		}
 		if (ZEPHIR_IS_LONG(columnType, 1)) {
-			ZEPHIR_INIT_NVAR(columnSql);
-			ZVAL_STRING(columnSql, "DATE", 1);
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("DATE") TSRMLS_CC);
+			}
 			break;
 		}
 		if (ZEPHIR_IS_LONG(columnType, 2)) {
-			ZEPHIR_INIT_NVAR(columnSql);
-			ZEPHIR_CONCAT_SVS(columnSql, "CHARACTER VARYING(", size, ")");
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("CHARACTER VARYING") TSRMLS_CC);
+			}
+			ZEPHIR_INIT_VAR(_0);
+			ZEPHIR_CONCAT_SVS(_0, "(", size, ")");
+			zephir_concat_self(&columnSql, _0 TSRMLS_CC);
 			break;
 		}
 		if (ZEPHIR_IS_LONG(columnType, 3)) {
-			ZEPHIR_CALL_METHOD(&_0, column, "getscale",  NULL);
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("NUMERIC") TSRMLS_CC);
+			}
+			ZEPHIR_CALL_METHOD(&_1, column, "getscale", NULL);
 			zephir_check_call_status();
-			ZEPHIR_INIT_NVAR(columnSql);
-			ZEPHIR_CONCAT_SVSVS(columnSql, "NUMERIC(", size, ",", _0, ")");
+			ZEPHIR_INIT_LNVAR(_0);
+			ZEPHIR_CONCAT_SVSVS(_0, "(", size, ",", _1, ")");
+			zephir_concat_self(&columnSql, _0 TSRMLS_CC);
 			break;
 		}
 		if (ZEPHIR_IS_LONG(columnType, 4)) {
-			ZEPHIR_INIT_NVAR(columnSql);
-			ZVAL_STRING(columnSql, "TIMESTAMP", 1);
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("TIMESTAMP") TSRMLS_CC);
+			}
 			break;
 		}
 		if (ZEPHIR_IS_LONG(columnType, 5)) {
-			ZEPHIR_INIT_NVAR(columnSql);
-			ZEPHIR_CONCAT_SVS(columnSql, "CHARACTER(", size, ")");
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("CHARACTER") TSRMLS_CC);
+			}
+			ZEPHIR_INIT_LNVAR(_0);
+			ZEPHIR_CONCAT_SVS(_0, "(", size, ")");
+			zephir_concat_self(&columnSql, _0 TSRMLS_CC);
 			break;
 		}
 		if (ZEPHIR_IS_LONG(columnType, 6)) {
-			ZEPHIR_INIT_NVAR(columnSql);
-			ZVAL_STRING(columnSql, "TEXT", 1);
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("TEXT") TSRMLS_CC);
+			}
 			break;
 		}
 		if (ZEPHIR_IS_LONG(columnType, 7)) {
-			ZEPHIR_INIT_NVAR(columnSql);
-			ZVAL_STRING(columnSql, "FLOAT", 1);
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("FLOAT") TSRMLS_CC);
+			}
 			break;
 		}
 		if (ZEPHIR_IS_LONG(columnType, 8)) {
-			ZEPHIR_INIT_NVAR(columnSql);
-			ZVAL_STRING(columnSql, "SMALLINT(1)", 1);
+			if (ZEPHIR_IS_EMPTY(columnSql)) {
+				zephir_concat_self_str(&columnSql, SL("SMALLINT(1)") TSRMLS_CC);
+			}
 			break;
 		}
-		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "Unrecognized PostgreSQL data type", "phalcon/db/dialect/postgresql.zep", 79);
-		return;
+		if (ZEPHIR_IS_EMPTY(columnSql)) {
+			ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "Unrecognized PostgreSQL data type", "phalcon/db/dialect/postgresql.zep", 112);
+			return;
+		}
+		ZEPHIR_CALL_METHOD(&typeValues, column, "gettypevalues", NULL);
+		zephir_check_call_status();
+		if (!(ZEPHIR_IS_EMPTY(typeValues))) {
+			if (Z_TYPE_P(typeValues) == IS_ARRAY) {
+				ZEPHIR_INIT_VAR(valueSql);
+				ZVAL_STRING(valueSql, "", 1);
+				zephir_is_iterable(typeValues, &_3, &_2, 0, 0, "phalcon/db/dialect/postgresql.zep", 123);
+				for (
+				  ; zephir_hash_get_current_data_ex(_3, (void**) &_4, &_2) == SUCCESS
+				  ; zephir_hash_move_forward_ex(_3, &_2)
+				) {
+					ZEPHIR_GET_HVALUE(value, _4);
+					ZEPHIR_SINIT_NVAR(_5);
+					ZVAL_STRING(&_5, "\"", 0);
+					ZEPHIR_CALL_FUNCTION(&_1, "addcslashes", &_6, value, &_5);
+					zephir_check_call_status();
+					ZEPHIR_INIT_LNVAR(_0);
+					ZEPHIR_CONCAT_SVS(_0, "\"", _1, "\", ");
+					zephir_concat_self(&valueSql, _0 TSRMLS_CC);
+				}
+				ZEPHIR_SINIT_NVAR(_5);
+				ZVAL_LONG(&_5, 0);
+				ZEPHIR_SINIT_VAR(_7);
+				ZVAL_LONG(&_7, -2);
+				ZEPHIR_CALL_FUNCTION(&_8, "substr", &_9, valueSql, &_5, &_7);
+				zephir_check_call_status();
+				ZEPHIR_INIT_VAR(_10);
+				ZEPHIR_CONCAT_SVS(_10, "(", _8, ")");
+				zephir_concat_self(&columnSql, _10 TSRMLS_CC);
+			} else {
+				ZEPHIR_SINIT_NVAR(_5);
+				ZVAL_STRING(&_5, "\"", 0);
+				ZEPHIR_CALL_FUNCTION(&_8, "addcslashes", &_6, typeValues, &_5);
+				zephir_check_call_status();
+				ZEPHIR_INIT_LNVAR(_10);
+				ZEPHIR_CONCAT_SVS(_10, "(\"", _8, "\")");
+				zephir_concat_self(&columnSql, _10 TSRMLS_CC);
+			}
+		}
 	} while(0);
 
 	RETURN_CCTOR(columnSql);
@@ -149,7 +226,11 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, addColumn) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 95);
+	if (!(zephir_instance_of_ev(column, phalcon_db_columninterface_ce TSRMLS_CC))) {
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(spl_ce_InvalidArgumentException, "Parameter 'column' must be an instance of 'Phalcon\\Db\\ColumnInterface'", "", 0);
+		return;
+	}
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 143);
 	return;
 
 }
@@ -170,7 +251,11 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, modifyColumn) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 108);
+	if (!(zephir_instance_of_ev(column, phalcon_db_columninterface_ce TSRMLS_CC))) {
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(spl_ce_InvalidArgumentException, "Parameter 'column' must be an instance of 'Phalcon\\Db\\ColumnInterface'", "", 0);
+		return;
+	}
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 156);
 	return;
 
 }
@@ -191,7 +276,7 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, dropColumn) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 121);
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 169);
 	return;
 
 }
@@ -201,7 +286,7 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, dropColumn) {
  *
  * @param	string tableName
  * @param	string schemaName
- * @param	Phalcon\Db\Index index
+ * @param	Phalcon\Db\IndexInterface index
  * @return	string
  */
 PHP_METHOD(Phalcon_Db_Dialect_Postgresql, addIndex) {
@@ -212,7 +297,11 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, addIndex) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 134);
+	if (!(zephir_instance_of_ev(index, phalcon_db_indexinterface_ce TSRMLS_CC))) {
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(spl_ce_InvalidArgumentException, "Parameter 'index' must be an instance of 'Phalcon\\Db\\IndexInterface'", "", 0);
+		return;
+	}
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 182);
 	return;
 
 }
@@ -233,7 +322,7 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, dropIndex) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 147);
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 195);
 	return;
 
 }
@@ -243,7 +332,7 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, dropIndex) {
  *
  * @param	string tableName
  * @param	string schemaName
- * @param	Phalcon\Db\Index index
+ * @param	Phalcon\Db\IndexInterface index
  * @return	string
  */
 PHP_METHOD(Phalcon_Db_Dialect_Postgresql, addPrimaryKey) {
@@ -254,7 +343,11 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, addPrimaryKey) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 160);
+	if (!(zephir_instance_of_ev(index, phalcon_db_indexinterface_ce TSRMLS_CC))) {
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(spl_ce_InvalidArgumentException, "Parameter 'index' must be an instance of 'Phalcon\\Db\\IndexInterface'", "", 0);
+		return;
+	}
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 208);
 	return;
 
 }
@@ -274,7 +367,7 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, dropPrimaryKey) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 172);
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 220);
 	return;
 
 }
@@ -295,7 +388,11 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, addForeignKey) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 185);
+	if (!(zephir_instance_of_ev(reference, phalcon_db_referenceinterface_ce TSRMLS_CC))) {
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(spl_ce_InvalidArgumentException, "Parameter 'reference' must be an instance of 'Phalcon\\Db\\ReferenceInterface'", "", 0);
+		return;
+	}
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 233);
 	return;
 
 }
@@ -316,7 +413,7 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, dropForeignKey) {
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 198);
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 246);
 	return;
 
 }
@@ -350,13 +447,16 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, _getTableOptions) {
  */
 PHP_METHOD(Phalcon_Db_Dialect_Postgresql, createTable) {
 
-	zval *tableName, *schemaName, *definition;
+	zval *definition = NULL;
+	zval *tableName, *schemaName, *definition_param = NULL;
 
-	zephir_fetch_params(0, 3, 0, &tableName, &schemaName, &definition);
+	zephir_fetch_params(0, 3, 0, &tableName, &schemaName, &definition_param);
+
+	definition = definition_param;
 
 
 
-	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 222);
+	ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_db_exception_ce, "Not implemented yet", "phalcon/db/dialect/postgresql.zep", 270);
 	return;
 
 }
@@ -414,11 +514,11 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, createView) {
 
 
 
-	if (!(zephir_array_isset_string(definition, SS("sql")))) {
-		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "The index 'sql' is required in the definition array", "phalcon/db/dialect/postgresql.zep", 263);
+	ZEPHIR_OBS_VAR(viewSql);
+	if (!(zephir_array_isset_string_fetch(&viewSql, definition, SS("sql"), 0 TSRMLS_CC))) {
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "The index 'sql' is required in the definition array", "phalcon/db/dialect/postgresql.zep", 311);
 		return;
 	}
-	zephir_array_fetch_string(&viewSql, definition, SL("sql"), PH_NOISY | PH_READONLY TSRMLS_CC);
 	if (zephir_is_true(schemaName)) {
 		ZEPHIR_INIT_VAR(view);
 		ZEPHIR_CONCAT_VSV(view, viewName, ".", schemaName);
@@ -490,9 +590,9 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, tableExists) {
 
 	ZEPHIR_INIT_VAR(sql);
 	if (zephir_is_true(schemaName)) {
-		ZEPHIR_CONCAT_SVSVS(sql, "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM information_schema.tables WHERE table_schema = \"", schemaName, "\" AND table_name=\"", tableName, "\"");
+		ZEPHIR_CONCAT_SVSVS(sql, "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM information_schema.tables WHERE table_schema = '", schemaName, "' AND table_name='", tableName, "'");
 	} else {
-		ZEPHIR_CONCAT_SVS(sql, "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM information_schema.tables WHERE table_schema = \"public\" AND table_name=\"", tableName, "\"");
+		ZEPHIR_CONCAT_SVS(sql, "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM information_schema.tables WHERE table_schema = 'public' AND table_name='", tableName, "'");
 	}
 	RETURN_CCTOR(sql);
 
@@ -519,9 +619,9 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, viewExists) {
 
 	ZEPHIR_INIT_VAR(sql);
 	if (zephir_is_true(schemaName)) {
-		ZEPHIR_CONCAT_SVSVS(sql, "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM pg_views WHERE viewname=\"", viewName, "\" AND schemaname=\"", schemaName, "\"");
+		ZEPHIR_CONCAT_SVSVS(sql, "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM pg_views WHERE viewname='", viewName, "' AND schemaname='", schemaName, "'");
 	} else {
-		ZEPHIR_CONCAT_SVS(sql, "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM pg_views WHERE viewname=\"", viewName, "\"");
+		ZEPHIR_CONCAT_SVS(sql, "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM pg_views WHERE viewname='", viewName, "'");
 	}
 	RETURN_CCTOR(sql);
 
@@ -550,9 +650,9 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, describeColumns) {
 
 	ZEPHIR_INIT_VAR(sql);
 	if (zephir_is_true(schema)) {
-		ZEPHIR_CONCAT_SVSVS(sql, "SELECT DISTINCT c.column_name AS Field, c.data_type AS Type, c.character_maximum_length AS Size, c.numeric_precision AS NumericSize, c.is_nullable AS Null, CASE WHEN pkc.column_name NOTNULL THEN \"PRI\" ELSE \"\" END AS Key, CASE WHEN c.data_type LIKE \"%int%\" AND c.column_default LIKE \"%nextval%\" THEN \"auto_increment\" ELSE \"\" END AS Extra, c.ordinal_position AS Position FROM information_schema.columns c LEFT JOIN ( SELECT kcu.column_name, kcu.table_name, kcu.table_schema FROM information_schema.table_constraints tc INNER JOIN information_schema.key_column_usage kcu on (kcu.constraint_name = tc.constraint_name and kcu.table_name = tc.table_name and kcu.table_schema = tc.table_schema) WHERE tc.constraint_type = \"PRIMARY KEY\") pkc ON (c.column_name=pkc.column_name AND c.table_schema = pkc.table_schema AND c.table_name = pkc.table_name) WHERE c.table_schema = \"", schema, "\" AND c.table_name=\"", table, "\" ORDER BY c.ordinal_position");
+		ZEPHIR_CONCAT_SVSVS(sql, "SELECT DISTINCT c.column_name AS Field, c.data_type AS Type, c.character_maximum_length AS Size, c.numeric_precision AS NumericSize, c.numeric_scale AS NumericScale, c.is_nullable AS Null, CASE WHEN pkc.column_name NOTNULL THEN 'PRI' ELSE '' END AS Key, CASE WHEN c.data_type LIKE '%int%' AND c.column_default LIKE '%nextval%' THEN 'auto_increment' ELSE '' END AS Extra, c.ordinal_position AS Position, c.column_default FROM information_schema.columns c LEFT JOIN ( SELECT kcu.column_name, kcu.table_name, kcu.table_schema FROM information_schema.table_constraints tc INNER JOIN information_schema.key_column_usage kcu on (kcu.constraint_name = tc.constraint_name and kcu.table_name=tc.table_name and kcu.table_schema=tc.table_schema) WHERE tc.constraint_type='PRIMARY KEY') pkc ON (c.column_name=pkc.column_name AND c.table_schema = pkc.table_schema AND c.table_name=pkc.table_name) WHERE c.table_schema='", schema, "' AND c.table_name='", table, "' ORDER BY c.ordinal_position");
 	} else {
-		ZEPHIR_CONCAT_SVS(sql, "SELECT DISTINCT c.column_name AS Field, c.data_type AS Type, c.character_maximum_length AS Size, c.numeric_precision AS NumericSize, c.is_nullable AS Null, CASE WHEN pkc.column_name NOTNULL THEN \"PRI\" ELSE \"\" END AS Key, CASE WHEN c.data_type LIKE \"%int%\" AND c.column_default LIKE \"%nextval%\" THEN \"auto_increment\" ELSE \"\" END AS Extra, c.ordinal_position AS Position FROM information_schema.columns c LEFT JOIN ( SELECT kcu.column_name, kcu.table_name, kcu.table_schema FROM information_schema.table_constraints tc INNER JOIN information_schema.key_column_usage kcu on (kcu.constraint_name = tc.constraint_name and kcu.table_name = tc.table_name and kcu.table_schema=tc.table_schema) WHERE tc.constraint_type = \"PRIMARY KEY\") pkc ON (c.column_name=pkc.column_name AND c.table_schema = pkc.table_schema AND c.table_name = pkc.table_name) WHERE c.table_schema = \"public\" AND c.table_name=\"", table, "\" ORDER BY c.ordinal_position");
+		ZEPHIR_CONCAT_SVS(sql, "SELECT DISTINCT c.column_name AS Field, c.data_type AS Type, c.character_maximum_length AS Size, c.numeric_precision AS NumericSize, c.numeric_scale AS NumericScale, c.is_nullable AS Null, CASE WHEN pkc.column_name NOTNULL THEN 'PRI' ELSE '' END AS Key, CASE WHEN c.data_type LIKE '%int%' AND c.column_default LIKE '%nextval%' THEN 'auto_increment' ELSE '' END AS Extra, c.ordinal_position AS Position, c.column_default FROM information_schema.columns c LEFT JOIN ( SELECT kcu.column_name, kcu.table_name, kcu.table_schema FROM information_schema.table_constraints tc INNER JOIN information_schema.key_column_usage kcu on (kcu.constraint_name = tc.constraint_name and kcu.table_name=tc.table_name and kcu.table_schema=tc.table_schema) WHERE tc.constraint_type='PRIMARY KEY') pkc ON (c.column_name=pkc.column_name AND c.table_schema = pkc.table_schema AND c.table_name=pkc.table_name) WHERE c.table_schema='public' AND c.table_name='", table, "' ORDER BY c.ordinal_position");
 	}
 	RETURN_CCTOR(sql);
 
@@ -582,9 +682,9 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, listTables) {
 
 	ZEPHIR_INIT_VAR(sql);
 	if (zephir_is_true(schemaName)) {
-		ZEPHIR_CONCAT_SVS(sql, "SELECT table_name FROM information_schema.tables WHERE table_schema = \"", schemaName, "\" ORDER BY table_name");
+		ZEPHIR_CONCAT_SVS(sql, "SELECT table_name FROM information_schema.tables WHERE table_schema = '", schemaName, "' ORDER BY table_name");
 	} else {
-		ZVAL_STRING(sql, "SELECT table_name FROM information_schema.tables WHERE table_schema = \"public\" ORDER BY table_name", 1);
+		ZVAL_STRING(sql, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name", 1);
 	}
 	RETURN_CCTOR(sql);
 
@@ -610,9 +710,9 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, listViews) {
 
 	ZEPHIR_INIT_VAR(sql);
 	if (zephir_is_true(schemaName)) {
-		ZEPHIR_CONCAT_SVS(sql, "SELECT viewname AS view_name FROM pg_views WHERE schemaname = \"", schemaName, "\" ORDER BY view_name");
+		ZEPHIR_CONCAT_SVS(sql, "SELECT viewname AS view_name FROM pg_views WHERE schemaname = '", schemaName, "' ORDER BY view_name");
 	} else {
-		ZVAL_STRING(sql, "SELECT viewname AS view_name FROM pg_views WHERE schemaname = \"public\" ORDER BY view_name", 1);
+		ZVAL_STRING(sql, "SELECT viewname AS view_name FROM pg_views WHERE schemaname = 'public' ORDER BY view_name", 1);
 	}
 	RETURN_CCTOR(sql);
 
@@ -636,7 +736,7 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, describeIndexes) {
 	}
 
 
-	ZEPHIR_CONCAT_SVS(return_value, "SELECT 0 as c0, t.relname as table_name, i.relname as key_name, 3 as c3, a.attname as column_name FROM pg_class t, pg_class i, pg_index ix, pg_attribute a WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND a.attnum = ANY(ix.indkey) AND t.relkind = \"r\" AND t.relname = \"", table, "\" ORDER BY t.relname, i.relname;");
+	ZEPHIR_CONCAT_SVS(return_value, "SELECT 0 as c0, t.relname as table_name, i.relname as key_name, 3 as c3, a.attname as column_name FROM pg_class t, pg_class i, pg_index ix, pg_attribute a WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND a.attnum = ANY(ix.indkey) AND t.relkind = 'r' AND t.relname = '", table, "' ORDER BY t.relname, i.relname;");
 	return;
 
 }
@@ -661,14 +761,14 @@ PHP_METHOD(Phalcon_Db_Dialect_Postgresql, describeReferences) {
 
 
 	ZEPHIR_INIT_VAR(sql);
-	ZVAL_STRING(sql, "SELECT tc.table_name as TABLE_NAME, kcu.column_name as COLUMN_NAME, tc.constraint_name as CONSTRAINT_NAME, tc.table_catalog as REFERENCED_TABLE_SCHEMA, ccu.table_name AS REFERENCED_TABLE_NAME, ccu.column_name AS REFERENCED_COLUMN_NAME FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = \"FOREIGN KEY\" AND ", 1);
+	ZVAL_STRING(sql, "SELECT tc.table_name as TABLE_NAME, kcu.column_name as COLUMN_NAME, tc.constraint_name as CONSTRAINT_NAME, tc.table_catalog as REFERENCED_TABLE_SCHEMA, ccu.table_name AS REFERENCED_TABLE_NAME, ccu.column_name AS REFERENCED_COLUMN_NAME FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'FOREIGN KEY' AND ", 1);
 	if (zephir_is_true(schema)) {
 		ZEPHIR_INIT_VAR(_0);
-		ZEPHIR_CONCAT_SVSVS(_0, "tc.table_schema = \"", schema, "\" AND tc.table_name=\"", table, "\"");
+		ZEPHIR_CONCAT_SVSVS(_0, "tc.table_schema = '", schema, "' AND tc.table_name='", table, "'");
 		zephir_concat_self(&sql, _0 TSRMLS_CC);
 	} else {
 		ZEPHIR_INIT_LNVAR(_0);
-		ZEPHIR_CONCAT_SVS(_0, "tc.table_name=\"", table, "\"");
+		ZEPHIR_CONCAT_SVS(_0, "tc.table_name='", table, "'");
 		zephir_concat_self(&sql, _0 TSRMLS_CC);
 	}
 	RETURN_CCTOR(sql);

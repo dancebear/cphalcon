@@ -20,6 +20,8 @@
 
 namespace Phalcon\Cli;
 
+use Phalcon\Events\ManagerInterface;
+
 /**
  * Phalcon\Cli\Dispatcher
  *
@@ -51,6 +53,19 @@ class Dispatcher extends \Phalcon\Dispatcher
 	protected _defaultHandler = "main";
 
 	protected _defaultAction = "main";
+
+	protected _options;
+
+	/**
+	 * Phalcon\Cli\Dispatcher constructor
+	 *
+	 */
+	public function __construct()
+	{
+		let this->_options = [];
+
+		parent::__construct();
+	}
 
 	/**
 	 * Sets the default task suffix
@@ -100,18 +115,31 @@ class Dispatcher extends \Phalcon\Dispatcher
 	 */
 	protected function _throwDispatchException(string message, int exceptionCode=0)
 	{
-		var exception, eventsManager;
+		var exception;
 
 		let exception = new \Phalcon\Cli\Dispatcher\Exception(message, exceptionCode);
 
-		let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager;
+		if this->_handleException(exception) === false {
+			return false;
+		}
+
+		throw exception;
+	}
+
+	/**
+	 * Handles a user exception
+	 *
+	 * @param \Exception exception
+	 */
+	protected function _handleException(<\Exception> exception)
+	{
+		var eventsManager;
+		let eventsManager = <ManagerInterface> this->_eventsManager;
 		if typeof eventsManager == "object" {
 			if eventsManager->fire("dispatch:beforeException", this, exception) === false {
 				return false;
 			}
 		}
-
-		throw exception;
 	}
 
 	/**
@@ -119,7 +147,7 @@ class Dispatcher extends \Phalcon\Dispatcher
 	 *
 	 * @return Phalcon\CLI\Task
 	 */
-	public function getLastTask() -> <\Phalcon\CLI\Task>
+	public function getLastTask() -> <\Phalcon\Cli\Task>
 	{
 		return this->_lastHandler;
 	}
@@ -129,9 +157,29 @@ class Dispatcher extends \Phalcon\Dispatcher
 	 *
 	 * @return Phalcon\CLI\Task
 	 */
-	public function getActiveTask() -> <\Phalcon\CLI\Task>
+	public function getActiveTask() -> <\Phalcon\Cli\Task>
 	{
 		return this->_activeHandler;
+	}
+
+	/**
+	 * Set the options to be dispatched
+	 *
+	 * @param array options
+	 */
+	public function setOptions(array options)
+	{
+		let this->_options = options;
+	}
+
+	/**
+	 * Get dispatched options
+	 *
+	 * @return array
+	 */
+	public function getOptions() -> array
+	{
+		return this->_options;
 	}
 
 }

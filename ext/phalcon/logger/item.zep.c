@@ -65,6 +65,8 @@ ZEPHIR_INIT_CLASS(Phalcon_Logger_Item) {
 	 */
 	zend_declare_property_null(phalcon_logger_item_ce, SL("_time"), ZEND_ACC_PROTECTED TSRMLS_CC);
 
+	zend_declare_property_null(phalcon_logger_item_ce, SL("_context"), ZEND_ACC_PROTECTED TSRMLS_CC);
+
 	return SUCCESS;
 
 }
@@ -105,21 +107,29 @@ PHP_METHOD(Phalcon_Logger_Item, getTime) {
 
 }
 
+PHP_METHOD(Phalcon_Logger_Item, getContext) {
+
+
+	RETURN_MEMBER(this_ptr, "_context");
+
+}
+
 /**
  * Phalcon\Logger\Item constructor
  *
  * @param string $message
  * @param integer $type
  * @param integer $time
+ * @param array $context
  */
 PHP_METHOD(Phalcon_Logger_Item, __construct) {
 
 	int type, time;
-	zval *message_param = NULL, *type_param = NULL, *time_param = NULL, *_0;
+	zval *message_param = NULL, *type_param = NULL, *time_param = NULL, *context = NULL, *_0;
 	zval *message = NULL;
 
 	ZEPHIR_MM_GROW();
-	zephir_fetch_params(1, 2, 1, &message_param, &type_param, &time_param);
+	zephir_fetch_params(1, 2, 2, &message_param, &type_param, &time_param, &context);
 
 	zephir_get_strval(message, message_param);
 	type = zephir_get_intval(type_param);
@@ -127,6 +137,9 @@ PHP_METHOD(Phalcon_Logger_Item, __construct) {
 		time = 0;
 	} else {
 		time = zephir_get_intval(time_param);
+	}
+	if (!context) {
+		context = ZEPHIR_GLOBAL(global_null);
 	}
 
 
@@ -137,6 +150,9 @@ PHP_METHOD(Phalcon_Logger_Item, __construct) {
 	ZEPHIR_INIT_ZVAL_NREF(_0);
 	ZVAL_LONG(_0, time);
 	zephir_update_property_this(this_ptr, SL("_time"), _0 TSRMLS_CC);
+	if (Z_TYPE_P(context) == IS_ARRAY) {
+		zephir_update_property_this(this_ptr, SL("_context"), context TSRMLS_CC);
+	}
 	ZEPHIR_MM_RESTORE();
 
 }

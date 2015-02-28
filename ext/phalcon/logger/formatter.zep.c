@@ -14,6 +14,10 @@
 #include "kernel/main.h"
 #include "kernel/operators.h"
 #include "kernel/memory.h"
+#include "kernel/hash.h"
+#include "kernel/concat.h"
+#include "kernel/array.h"
+#include "kernel/fcall.h"
 
 
 /*
@@ -88,14 +92,66 @@ PHP_METHOD(Phalcon_Logger_Formatter, getTypeString) {
 			RETURN_STRING("INFO", 1);
 		}
 		if (type == 0) {
-			RETURN_STRING("EMERGENCE", 1);
+			RETURN_STRING("EMERGENCY", 1);
 		}
 		if (type == 9) {
 			RETURN_STRING("SPECIAL", 1);
 		}
-		RETURN_STRING("CUSTOM", 1);
 	} while(0);
 
+	RETURN_STRING("CUSTOM", 1);
+
+}
+
+/**
+ * Interpolates context values into the message placeholders
+ *
+ * @see http://www.php-fig.org/psr/psr-3/ Section 1.2 Message
+ * @param string $message
+ * @param array $context
+ */
+PHP_METHOD(Phalcon_Logger_Formatter, interpolate) {
+
+	int ZEPHIR_LAST_CALL_STATUS;
+	zephir_nts_static zephir_fcall_cache_entry *_5 = NULL;
+	HashTable *_2;
+	HashPosition _1;
+	zend_bool _0;
+	zval *message_param = NULL, *context = NULL, *replace, *key = NULL, *value = NULL, **_3, *_4 = NULL;
+	zval *message = NULL;
+
+	ZEPHIR_MM_GROW();
+	zephir_fetch_params(1, 1, 1, &message_param, &context);
+
+	zephir_get_strval(message, message_param);
+	if (!context) {
+		context = ZEPHIR_GLOBAL(global_null);
+	}
+
+
+	_0 = Z_TYPE_P(context) == IS_ARRAY;
+	if (_0) {
+		_0 = zephir_fast_count_int(context TSRMLS_CC) > 0;
+	}
+	if (_0) {
+		ZEPHIR_INIT_VAR(replace);
+		array_init(replace);
+		zephir_is_iterable(context, &_2, &_1, 0, 0, "phalcon/logger/formatter.zep", 92);
+		for (
+		  ; zephir_hash_get_current_data_ex(_2, (void**) &_3, &_1) == SUCCESS
+		  ; zephir_hash_move_forward_ex(_2, &_1)
+		) {
+			ZEPHIR_GET_HMKEY(key, _2, _1);
+			ZEPHIR_GET_HVALUE(value, _3);
+			ZEPHIR_INIT_LNVAR(_4);
+			ZEPHIR_CONCAT_SVS(_4, "{", key, "}");
+			zephir_array_update_zval(&replace, _4, &value, PH_COPY | PH_SEPARATE);
+		}
+		ZEPHIR_RETURN_CALL_FUNCTION("strtr", &_5, message, replace);
+		zephir_check_call_status();
+		RETURN_MM();
+	}
+	RETURN_CTOR(message);
 
 }
 

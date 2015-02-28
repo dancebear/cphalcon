@@ -1,6 +1,13 @@
 PHP_ARG_ENABLE(phalcon, whether to enable phalcon, [ --enable-phalcon   Enable Phalcon])
 
 if test "$PHP_PHALCON" = "yes"; then
+
+	
+
+	if ! test "x" = "x"; then
+		PHP_EVAL_LIBLINE(, PHALCON_SHARED_LIBADD)
+	fi
+
 	AC_DEFINE(HAVE_PHALCON, 1, [Whether you have Phalcon])
 	phalcon_sources="phalcon.c kernel/main.c kernel/memory.c kernel/exception.c kernel/hash.c kernel/debug.c kernel/backtrace.c kernel/object.c kernel/array.c kernel/extended/array.c kernel/string.c kernel/fcall.c kernel/require.c kernel/file.c kernel/operators.c kernel/concat.c kernel/variables.c kernel/filter.c kernel/iterator.c kernel/exit.c phalcon/acl.zep.c
 	phalcon/acl/adapter.zep.c
@@ -29,6 +36,9 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/assets/filters/cssmin.zep.c
 	phalcon/assets/filters/jsmin.zep.c
 	phalcon/assets/filters/none.zep.c
+	phalcon/assets/inline.zep.c
+	phalcon/assets/inline/css.zep.c
+	phalcon/assets/inline/js.zep.c
 	phalcon/assets/manager.zep.c
 	phalcon/assets/resource.zep.c
 	phalcon/assets/resource/css.zep.c
@@ -40,6 +50,7 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/cache/backend/memcache.zep.c
 	phalcon/cache/backend/memory.zep.c
 	phalcon/cache/backend/mongo.zep.c
+	phalcon/cache/backend/redis.zep.c
 	phalcon/cache/backend/xcache.zep.c
 	phalcon/cache/backendinterface.zep.c
 	phalcon/cache/exception.zep.c
@@ -57,10 +68,13 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/cli/dispatcher/exception.zep.c
 	phalcon/cli/router.zep.c
 	phalcon/cli/router/exception.zep.c
+	phalcon/cli/router/route.zep.c
 	phalcon/cli/task.zep.c
 	phalcon/config.zep.c
 	phalcon/config/adapter/ini.zep.c
 	phalcon/config/adapter/json.zep.c
+	phalcon/config/adapter/php.zep.c
+	phalcon/config/adapter/yaml.zep.c
 	phalcon/config/exception.zep.c
 	phalcon/crypt.zep.c
 	phalcon/crypt/exception.zep.c
@@ -132,6 +146,7 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/forms/element/hidden.zep.c
 	phalcon/forms/element/numeric.zep.c
 	phalcon/forms/element/password.zep.c
+	phalcon/forms/element/radio.zep.c
 	phalcon/forms/element/select.zep.c
 	phalcon/forms/element/submit.zep.c
 	phalcon/forms/element/text.zep.c
@@ -217,6 +232,7 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/mvc/model/metadata/session.zep.c
 	phalcon/mvc/model/metadata/strategy/annotations.zep.c
 	phalcon/mvc/model/metadata/strategy/introspection.zep.c
+	phalcon/mvc/model/metadata/strategyinterface.zep.c
 	phalcon/mvc/model/metadata/xcache.zep.c
 	phalcon/mvc/model/metadatainterface.zep.c
 	phalcon/mvc/model/query.zep.c
@@ -283,6 +299,7 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/paginator/exception.zep.c
 	phalcon/queue/beanstalk.zep.c
 	phalcon/queue/beanstalk/job.zep.c
+	phalcon/registry.zep.c
 	phalcon/security.zep.c
 	phalcon/security/exception.zep.c
 	phalcon/session.zep.c
@@ -300,6 +317,7 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/text.zep.c
 	phalcon/translate.zep.c
 	phalcon/translate/adapter.zep.c
+	phalcon/translate/adapter/csv.zep.c
 	phalcon/translate/adapter/nativearray.zep.c
 	phalcon/translate/adapterinterface.zep.c
 	phalcon/translate/exception.zep.c
@@ -319,6 +337,7 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/validation/validator/file.zep.c
 	phalcon/validation/validator/identical.zep.c
 	phalcon/validation/validator/inclusionin.zep.c
+	phalcon/validation/validator/numericality.zep.c
 	phalcon/validation/validator/presenceof.zep.c
 	phalcon/validation/validator/regex.zep.c
 	phalcon/validation/validator/stringlength.zep.c
@@ -327,6 +346,7 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/validation/validatorinterface.zep.c
 	phalcon/version.zep.c phalcon/annotations/scanner.c
 	phalcon/annotations/parser.c
+	phalcon/mvc/model/orm.c
 	phalcon/mvc/model/query/scanner.c
 	phalcon/mvc/model/query/parser.c
 	phalcon/mvc/view/engine/volt/parser.c
@@ -334,7 +354,8 @@ if test "$PHP_PHALCON" = "yes"; then
 	phalcon/assets/filters/jsminifier.c
 	phalcon/assets/filters/cssminifier.c
 	phalcon/mvc/url/utils.c"
-	PHP_NEW_EXTENSION(phalcon, $phalcon_sources, $ext_shared)
+	PHP_NEW_EXTENSION(phalcon, $phalcon_sources, $ext_shared,, )
+	PHP_SUBST(PHALCON_SHARED_LIBADD)
 
 	old_CPPFLAGS=$CPPFLAGS
 	CPPFLAGS="$CPPFLAGS $INCLUDES"
@@ -374,4 +395,7 @@ if test "$PHP_PHALCON" = "yes"; then
 	)
 
 	CPPFLAGS=$old_CPPFLAGS
+
+	PHP_INSTALL_HEADERS([ext/phalcon], [php_PHALCON.h])
+
 fi

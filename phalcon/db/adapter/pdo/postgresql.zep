@@ -21,6 +21,8 @@
 namespace Phalcon\Db\Adapter\Pdo;
 
 use Phalcon\Db\Column;
+use Phalcon\Db\AdapterInterface;
+use Phalcon\Db\RawValue;
 
 /**
  * Phalcon\Db\Adapter\Pdo\Postgresql
@@ -39,7 +41,7 @@ use Phalcon\Db\Column;
  *
  * </code>
  */
-class Postgresql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInterface
+class Postgresql extends \Phalcon\Db\Adapter\Pdo implements AdapterInterface
 {
 
 	protected _type = "pgsql";
@@ -53,7 +55,7 @@ class Postgresql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterI
 	 * @param array $descriptor
 	 * @return boolean
 	 */
-	public function connect(descriptor=null)
+	public function connect(descriptor = null)
 	{
 		var schema, sql;
 
@@ -92,7 +94,7 @@ class Postgresql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterI
 	 * @param string schema
 	 * @return Phalcon\Db\Column[]
 	 */
-	public function describeColumns(string table, string schema=null)
+	public function describeColumns(string table, string schema = null)
 	{
 		var columns, columnType, field, definition,
 			oldColumn, columnName, charSize, numericSize, numericScale;
@@ -101,7 +103,7 @@ class Postgresql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterI
 
 		/**
 		 * We're using FETCH_NUM to fetch the columns
-		 * 0:name, 1:type, 2:size, 3:numericsize, 4: null, 5: key, 6: extra, 7: position
+		 * 0:name, 1:type, 2:size, 3:numericsize, 4: numericscale, 5: null, 6: key, 7: extra, 8: position, 9 default
 		 */
 		for field in this->fetchAll(this->_dialect->describeColumns(table, schema), \Phalcon\Db::FETCH_NUM) {
 
@@ -272,6 +274,16 @@ class Postgresql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterI
 			}
 
 			/**
+			 * Check if the column is default values
+			 */
+			if typeof field[9] != "null" {
+				let definition["default"] = preg_replace("/^'|'?::[[:alnum:][:space:]]+$/", "", field[9]);
+				if strcasecmp(definition["default"], "null") == 0 {
+					let definition["default"] = null;
+				}
+			}
+
+			/**
 			 * Every route is stored as a Phalcon\Db\Column
 			 */
 			let columnName = field[0],
@@ -306,9 +318,9 @@ class Postgresql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterI
 	 *
 	 * @return Phalcon\Db\RawValue
 	 */
-	public function getDefaultIdValue() -> <\Phalcon\Db\RawValue>
+	public function getDefaultIdValue() -> <RawValue>
 	{
-		return new \Phalcon\Db\RawValue("default");
+		return new RawValue("default");
 	}
 
 	/**
@@ -320,5 +332,4 @@ class Postgresql extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterI
 	{
 		return true;
 	}
-
 }

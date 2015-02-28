@@ -15,8 +15,8 @@
 #include "kernel/object.h"
 #include "kernel/memory.h"
 #include "kernel/array.h"
-#include "kernel/fcall.h"
 #include "kernel/operators.h"
+#include "kernel/fcall.h"
 #include "kernel/hash.h"
 #include "kernel/concat.h"
 
@@ -101,16 +101,36 @@ PHP_METHOD(Phalcon_Http_Response_Headers, get) {
  */
 PHP_METHOD(Phalcon_Http_Response_Headers, setRaw) {
 
-	zval *header, *_0;
+	zval *header;
+
+	zephir_fetch_params(0, 1, 0, &header);
+
+
+
+	zephir_update_property_array(this_ptr, SL("_headers"), header, ZEPHIR_GLOBAL(global_null) TSRMLS_CC);
+
+}
+
+/**
+ * Removes a header to be sent at the end of the request
+ *
+ * @param string header Header name
+ */
+PHP_METHOD(Phalcon_Http_Response_Headers, remove) {
+
+	zval *header_param = NULL, *headers;
+	zval *header = NULL;
 
 	ZEPHIR_MM_GROW();
-	zephir_fetch_params(1, 1, 0, &header);
+	zephir_fetch_params(1, 1, 0, &header_param);
+
+	zephir_get_strval(header, header_param);
 
 
-
-	ZEPHIR_INIT_VAR(_0);
-	ZVAL_STRING(_0, "", 1);
-	zephir_update_property_array(this_ptr, SL("_headers"), header, _0 TSRMLS_CC);
+	ZEPHIR_OBS_VAR(headers);
+	zephir_read_property_this(&headers, this_ptr, SL("_headers"), PH_NOISY_CC);
+	zephir_array_unset(&headers, header, PH_SEPARATE);
+	zephir_update_property_this(this_ptr, SL("_headers"), headers TSRMLS_CC);
 	ZEPHIR_MM_RESTORE();
 
 }
@@ -134,7 +154,7 @@ PHP_METHOD(Phalcon_Http_Response_Headers, send) {
 	zephir_check_call_status();
 	if (!(zephir_is_true(_0))) {
 		_2 = zephir_fetch_nproperty_this(this_ptr, SL("_headers"), PH_NOISY_CC);
-		zephir_is_iterable(_2, &_4, &_3, 0, 0);
+		zephir_is_iterable(_2, &_4, &_3, 0, 0, "phalcon/http/response/headers.zep", 98);
 		for (
 		  ; zephir_hash_get_current_data_ex(_4, (void**) &_5, &_3) == SUCCESS
 		  ; zephir_hash_move_forward_ex(_4, &_3)
@@ -175,6 +195,18 @@ PHP_METHOD(Phalcon_Http_Response_Headers, reset) {
 }
 
 /**
+ * Returns the current headers as an array
+ *
+ * @return array
+ */
+PHP_METHOD(Phalcon_Http_Response_Headers, toArray) {
+
+
+	RETURN_MEMBER(this_ptr, "_headers");
+
+}
+
+/**
  * Restore a Phalcon\Http\Response\Headers object
  *
  * @param array data
@@ -201,7 +233,7 @@ PHP_METHOD(Phalcon_Http_Response_Headers, __set_state) {
 	}
 	ZEPHIR_OBS_VAR(dataHeaders);
 	if (zephir_array_isset_string_fetch(&dataHeaders, data, SS("_headers"), 0 TSRMLS_CC)) {
-		zephir_is_iterable(dataHeaders, &_1, &_0, 0, 0);
+		zephir_is_iterable(dataHeaders, &_1, &_0, 0, 0, "phalcon/http/response/headers.zep", 136);
 		for (
 		  ; zephir_hash_get_current_data_ex(_1, (void**) &_2, &_0) == SUCCESS
 		  ; zephir_hash_move_forward_ex(_1, &_0)

@@ -19,13 +19,17 @@
 
 namespace Phalcon\Mvc\View;
 
+use Phalcon\DiInterface;
+use Phalcon\Di\Injectable;
+use Phalcon\Mvc\ViewInterface;
+
 /**
  * Phalcon\Mvc\View\Engine
  *
  * All the template engine adapters must inherit this class. This provides
  * basic interfacing between the engine and the Phalcon\Mvc\View component.
  */
-abstract class Engine extends \Phalcon\Di\Injectable
+abstract class Engine extends Injectable
 {
 
 	protected _view;
@@ -36,7 +40,7 @@ abstract class Engine extends \Phalcon\Di\Injectable
 	 * @param Phalcon\Mvc\ViewInterface view
 	 * @param Phalcon\DiInterface dependencyInjector
 	 */
-	public function __construct(view, <\Phalcon\DiInterface> dependencyInjector=null)
+	public function __construct(view, <DiInterface> dependencyInjector = null)
 	{
 		let this->_view = view;
 		let this->_dependencyInjector = dependencyInjector;
@@ -59,7 +63,7 @@ abstract class Engine extends \Phalcon\Di\Injectable
 	 * @param array params
 	 * @return string
 	 */
-	public function partial(string! partialPath, params=null) -> string
+	public function partial(string! partialPath, params = null) -> string
 	{
 		return this->_view->partial(partialPath, params);
 	}
@@ -69,9 +73,8 @@ abstract class Engine extends \Phalcon\Di\Injectable
 	 *
 	 * @return Phalcon\Mvc\ViewInterface
 	 */
-	public function getView() -> <\Phalcon\Mvc\ViewInterface>
+	public function getView() -> <ViewInterface>
 	{
 		return this->_view;
 	}
-
 }

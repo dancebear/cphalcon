@@ -19,6 +19,8 @@
 
 namespace Phalcon\Mvc;
 
+use Phalcon\Di\Injectable;
+use Phalcon\Mvc\ViewInterface;
 use Phalcon\Mvc\Application\Exception;
 use Phalcon\Mvc\ModuleDefinitionInterface;
 use Phalcon\Mvc\RouterInterface;
@@ -70,7 +72,7 @@ use Phalcon\Mvc\DispatcherInterface;
  *
  *</code>
  */
-class Application extends \Phalcon\Di\Injectable
+class Application extends Injectable
 {
 
 	protected _defaultModule;
@@ -84,7 +86,7 @@ class Application extends \Phalcon\Di\Injectable
 	 *
 	 * @param Phalcon\DiInterface dependencyInjector
 	 */
-	public function __construct(<DiInterface> dependencyInjector=null)
+	public function __construct(<DiInterface> dependencyInjector = null)
 	{
 		if typeof dependencyInjector == "object" {
 			let this->_dependencyInjector = dependencyInjector;
@@ -98,7 +100,7 @@ class Application extends \Phalcon\Di\Injectable
 	 * @param boolean implicitView
 	 * @return Phalcon\Mvc\Application
 	 */
-	public function useImplicitView(boolean implicitView) -> <\Phalcon\Mvc\Application>
+	public function useImplicitView(boolean implicitView) -> <Application>
 	{
 		let this->_implicitView = implicitView;
 		return this;
@@ -124,13 +126,9 @@ class Application extends \Phalcon\Di\Injectable
 	 * @param boolean merge
 	 * @param Phalcon\Mvc\Application
 	 */
-	public function registerModules(modules, boolean merge=false) -> <Application>
+	public function registerModules(array modules, boolean merge = false) -> <Application>
 	{
 		var registeredModules;
-
-		if typeof modules != "array" {
-			throw new Exception("Modules must be an Array");
-		}
 
 		if merge === false {
 			let this->_modules = modules;
@@ -157,12 +155,29 @@ class Application extends \Phalcon\Di\Injectable
 	}
 
 	/**
+	 * Gets the module definition registered in the application via module name
+	 *
+	 * @param string name
+	 * @return array|object
+	 */
+	public function getModule(string! name)
+	{
+		var module;
+
+		if !fetch module, this->_modules[name] {
+			throw new Exception("Module '" . name . "' isn't registered in the application container");
+		}
+
+		return module;
+	}
+
+	/**
 	 * Sets the module name to be used if the router doesn't return a valid module
 	 *
 	 * @param string defaultModule
 	 * @return Phalcon\Mvc\Application
 	 */
-	public function setDefaultModule(string! defaultModule) -> <\Phalcon\Mvc\Application>
+	public function setDefaultModule(string! defaultModule) -> <Application>
 	{
 		let this->_defaultModule = defaultModule;
 		return this;
@@ -184,7 +199,7 @@ class Application extends \Phalcon\Di\Injectable
 	 * @param string uri
 	 * @return Phalcon\Http\ResponseInterface|boolean
 	 */
-	public function handle(uri=null) -> <ResponseInterface> | boolean
+	public function handle(uri = null) -> <ResponseInterface> | boolean
 	{
 
 		var dependencyInjector, eventsManager, router, dispatcher, response, view,
@@ -231,25 +246,21 @@ class Application extends \Phalcon\Di\Injectable
 		if moduleName {
 
 			if typeof eventsManager == "object" {
-				if eventsManager->fire("application:beforeStartModule", this) === false {
+				if eventsManager->fire("application:beforeStartModule", this, moduleName) === false {
 					return false;
 				}
 			}
 
 			/**
-			 * Check if the module passed by the router is registered in the modules container
+			 * Gets the module definition
 			 */
-			if !fetch module, this->_modules[moduleName] {
-				throw new Exception("Module '" . moduleName . "' isn't registered in the application container");
-			}
+			let module = this->getModule(moduleName);
 
 			/**
 			 * A module definition must ne an array or an object
 			 */
-			if typeof module != "array" {
-				if typeof module != "object" {
-					throw new Exception("Invalid module definition");
-				}
+			if typeof module != "array" && typeof module != "object" {
+				throw new Exception("Invalid module definition");
 			}
 
 			/**
@@ -312,7 +323,7 @@ class Application extends \Phalcon\Di\Injectable
 		let implicitView = this->_implicitView;
 
 		if implicitView === true {
-			let view = <\Phalcon\Mvc\ViewInterface> dependencyInjector->getShared("view");
+			let view = <ViewInterface> dependencyInjector->getShared("view");
 		}
 
 		/**
@@ -446,5 +457,4 @@ class Application extends \Phalcon\Di\Injectable
 		 */
 		return response;
 	}
-
 }

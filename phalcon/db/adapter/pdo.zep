@@ -19,8 +19,12 @@
 
 namespace Phalcon\Db\Adapter;
 
+use Phalcon\Db\Adapter;
 use Phalcon\Db\Exception;
 use Phalcon\Db\Column;
+use Phalcon\Db\ResultInterface;
+use Phalcon\Events\ManagerInterface;
+use Phalcon\Db\Result\Pdo as ResultPdo;
 
 /**
  * Phalcon\Db\Adapter\Pdo
@@ -37,7 +41,7 @@ use Phalcon\Db\Column;
  *	));
  *</code>
  */
-abstract class Pdo extends \Phalcon\Db\Adapter
+abstract class Pdo extends Adapter
 {
 
 	/**
@@ -81,7 +85,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 * @param 	array descriptor
 	 * @return 	boolean
 	 */
-	public function connect(descriptor=null)
+	public function connect(descriptor = null)
 	{
 		var username, password, dsnParts, dsnAttributes,
 			persistent, options, key, value;
@@ -158,9 +162,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 */
 	public function prepare(string! sqlStatement) -> <\PDOStatement>
 	{
-		var pdo;
-		let pdo = this->_pdo;
-		return pdo->prepare(sqlStatement);
+		return this->_pdo->prepare(sqlStatement);
 	}
 
 	/**
@@ -244,11 +246,11 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 * @param  array bindTypes
 	 * @return Phalcon\Db\ResultInterface|bool
 	 */
-	public function query(string! sqlStatement, bindParams=null, bindTypes=null) -> <\Phalcon\Db\ResultInterface> | boolean
+	public function query(string! sqlStatement, bindParams = null, bindTypes = null) -> <ResultInterface> | boolean
 	{
 		var eventsManager, pdo, statement;
 
-		let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager;
+		let eventsManager = <ManagerInterface> this->_eventsManager;
 
 		/**
 		 * Execute the beforeQuery event if a EventsManager is available
@@ -257,7 +259,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 			let this->_sqlStatement = sqlStatement,
 				this->_sqlVariables = bindParams,
 				this->_sqlBindTypes = bindTypes;
-			if eventsManager->fire("db:beforeQuery", this, bindParams) == false {
+			if eventsManager->fire("db:beforeQuery", this, bindParams) === false {
 				return false;
 			}
 		}
@@ -279,7 +281,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 			if typeof eventsManager == "object" {
 				eventsManager->fire("db:afterQuery", this, bindParams);
 			}
-			return new \Phalcon\Db\Result\Pdo(this, statement, sqlStatement, bindParams, bindTypes);
+			return new ResultPdo(this, statement, sqlStatement, bindParams, bindTypes);
 		}
 
 		return statement;
@@ -300,14 +302,14 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 * @param  array bindTypes
 	 * @return boolean
 	 */
-	public function execute(string! sqlStatement, bindParams=null, bindTypes=null) -> boolean
+	public function execute(string! sqlStatement, bindParams = null, bindTypes = null) -> boolean
 	{
 		var eventsManager, affectedRows, pdo, newStatement, statement;
 
 		/**
 		 * Execute the beforeQuery event if a EventsManager is available
 		 */
-		let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager;
+		let eventsManager = <ManagerInterface> this->_eventsManager;
 		if typeof eventsManager == "object" {
 			let this->_sqlStatement = sqlStatement,
 				this->_sqlVariables = bindParams,
@@ -425,19 +427,19 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 */
 	public function convertBoundParams(string! sql, array params = []) -> array
 	{
-		var boundSql, placeHolders, queryParams, bindPattern, matches,
+		var boundSql, placeHolders, bindPattern, matches,
 			setOrder, placeMatch, value;
 
-		let queryParams = [], placeHolders = [],
+		let placeHolders = [],
 			bindPattern = "/\\?([0-9]+)|:([a-zA-Z0-9_]+):/",
 			matches = null, setOrder = 2;
 
 		if preg_match_all(bindPattern, sql, matches, setOrder) {
 			for placeMatch in matches {
 
-				if ! fetch value, params[placeMatch[1]] {
+				if !fetch value, params[placeMatch[1]] {
 					if isset placeMatch[2] {
-						if ! fetch value, params[placeMatch[2]] {
+						if !fetch value, params[placeMatch[2]] {
 							throw new Exception("Matched parameter wasn't found in parameters list");
 						}
 					} else {
@@ -456,7 +458,8 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 
 		return [
 			"sql"    : boundSql,
-			"params" : placeHolders ];
+			"params" : placeHolders
+		];
 	}
 
 	/**
@@ -477,7 +480,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 * @param string sequenceName
 	 * @return int|boolean
 	 */
-	public function lastInsertId(sequenceName=null) -> int | boolean
+	public function lastInsertId(sequenceName = null) -> int | boolean
 	{
 		var pdo;
 		let pdo = this->_pdo;
@@ -493,7 +496,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 * @param boolean nesting
 	 * @return boolean
 	 */
-	public function begin(boolean nesting=true) -> boolean
+	public function begin(boolean nesting = true) -> boolean
 	{
 		var pdo, transactionLevel, eventsManager, savepointName;
 
@@ -517,7 +520,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 			/**
 			 * Notify the events manager about the started transaction
 			 */
-			let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager;
+			let eventsManager = <ManagerInterface> this->_eventsManager;
 			if typeof eventsManager == "object" {
 				eventsManager->fire("db:beginTransaction", this);
 			}
@@ -530,7 +533,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 			 */
 			if transactionLevel && nesting && this->isNestedTransactionsWithSavepoints() {
 
-				let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager,
+				let eventsManager = <ManagerInterface> this->_eventsManager,
 					savepointName = this->getNestedTransactionSavepointName();
 
 				/**
@@ -554,7 +557,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 * @param boolean nesting
 	 * @return boolean
 	 */
-	public function rollback(boolean nesting=true) -> boolean
+	public function rollback(boolean nesting = true) -> boolean
 	{
 		var pdo, transactionLevel, eventsManager, savepointName;
 
@@ -576,7 +579,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 			/**
 			 * Notify the events manager about the rollbacked transaction
 			 */
-			let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager;
+			let eventsManager = <ManagerInterface> this->_eventsManager;
 			if typeof eventsManager == "object" {
 				eventsManager->fire("db:rollbackTransaction", this);
 			}
@@ -600,7 +603,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 				/**
 				 * Notify the events manager about the rolled back savepoint
 				 */
-				let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager;
+				let eventsManager = <ManagerInterface> this->_eventsManager;
 				if typeof eventsManager == "object" {
 					eventsManager->fire("db:rollbackSavepoint", this, savepointName);
 				}
@@ -631,7 +634,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 	 * @param boolean nesting
 	 * @return boolean
 	 */
-	public function commit(boolean nesting=true) -> boolean
+	public function commit(boolean nesting = true) -> boolean
 	{
 		var pdo, transactionLevel, eventsManager, savepointName;
 
@@ -653,7 +656,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 			/**
 			 * Notify the events manager about the commited transaction
 			 */
-			let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager;
+			let eventsManager = <ManagerInterface> this->_eventsManager;
 			if typeof eventsManager == "object" {
 				eventsManager->fire("db:commitTransaction", this);
 			}
@@ -674,7 +677,7 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 				/**
 				 * Notify the events manager about the commited savepoint
 				 */
-				let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager,
+				let eventsManager = <ManagerInterface> this->_eventsManager,
 					savepointName = this->getNestedTransactionSavepointName();
 				if typeof eventsManager == "object" {
 					eventsManager->fire("db:releaseSavepoint", this, savepointName);
@@ -740,4 +743,13 @@ abstract class Pdo extends \Phalcon\Db\Adapter
 		return this->_pdo;
 	}
 
+	/**
+	 * Return the error info, if any
+	 *
+	 * @return array
+	 */
+	public function getErrorInfo()
+	{
+		return this->_pdo->errorInfo();
+	}
 }

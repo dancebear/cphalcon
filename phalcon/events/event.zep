@@ -27,14 +27,39 @@ namespace Phalcon\Events;
 class Event
 {
 
+	/**
+	 * Event type
+	 *
+	 * @var string
+	 */
 	protected _type { set, get };
 
+	/**
+	 * Event source
+	 *
+	 * @var object
+	 */
 	protected _source { get };
 
+	/**
+	 * Event data
+	 *
+	 * @var mixed
+	 */
 	protected _data { set, get };
 
+	/**
+	 * Is event propagation stopped?
+	 *
+	 * @var boolean
+	 */
 	protected _stopped = false;
 
+	/**
+	 * Is event cancelable?
+	 *
+	 * @var boolean
+	 */
 	protected _cancelable = true { get };
 
 	/**
@@ -45,7 +70,7 @@ class Event
 	 * @param mixed data
 	 * @param boolean cancelable
 	 */
-	public function __construct(string! type, source, data=null, boolean cancelable=true)
+	public function __construct(string! type, source, data = null, boolean cancelable = true)
 	{
 
 		let this->_type = type,
@@ -63,7 +88,7 @@ class Event
 	/**
 	 * Stops the event preventing propagation
 	 */
-	public function stop()
+	public function stop() -> void
 	{
 		if this->_cancelable {
 			let this->_stopped = true;
@@ -81,5 +106,4 @@ class Event
 	{
 		return this->_stopped;
 	}
-
 }

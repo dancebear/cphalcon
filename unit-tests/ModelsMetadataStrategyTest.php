@@ -4,7 +4,7 @@
   +------------------------------------------------------------------------+
   | Phalcon Framework                                                      |
   +------------------------------------------------------------------------+
-  | Copyright (c) 2011-2012 Phalcon Team (http://www.phalconphp.com)       |
+  | Copyright (c) 2011-2014 Phalcon Team (http://www.phalconphp.com)       |
   +------------------------------------------------------------------------+
   | This source file is subject to the New BSD License that is bundled     |
   | with this package in the file docs/LICENSE.txt.                        |
@@ -61,6 +61,10 @@ class ModelsMetadataStrategyTest extends PHPUnit_Framework_TestCase
 		),
 		10 => array(),
 		11 => array(),
+		12 => array(
+			'type' => 'mechanical',
+			'year' => 1900
+		),
 	);
 
 	public function __construct()

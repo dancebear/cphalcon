@@ -3,7 +3,7 @@
  +------------------------------------------------------------------------+
  | Phalcon Framework                                                      |
  +------------------------------------------------------------------------+
- | Copyright (c) 2011-2014 Phalcon Team (http://www.phalconphp.com)       |
+ | Copyright (c) 2011-2015 Phalcon Team (http://www.phalconphp.com)       |
  +------------------------------------------------------------------------+
  | This source file is subject to the New BSD License that is bundled     |
  | with this package in the file docs/LICENSE.txt.                        |
@@ -19,6 +19,8 @@
 
 namespace Phalcon\Paginator\Adapter;
 
+use Phalcon\Mvc\Model\Query\Builder;
+use Phalcon\Paginator\AdapterInterface;
 use Phalcon\Paginator\Exception;
 
 /**
@@ -39,7 +41,7 @@ use Phalcon\Paginator\Exception;
  *  ));
  *</code>
  */
-class QueryBuilder implements \Phalcon\Paginator\AdapterInterface
+class QueryBuilder implements AdapterInterface
 {
 	/**
 	 * Configuration of paginator by model
@@ -63,8 +65,6 @@ class QueryBuilder implements \Phalcon\Paginator\AdapterInterface
 
 	/**
 	 * Phalcon\Paginator\Adapter\QueryBuilder
-	 *
-	 * @param array config
 	 */
 	public function __construct(array config)
 	{
@@ -75,24 +75,22 @@ class QueryBuilder implements \Phalcon\Paginator\AdapterInterface
 		if !fetch builder, config["builder"] {
 			throw new Exception("Parameter 'builder' is required");
 		} else {
-			let this->_builder = builder;
+			this->setQueryBuilder(builder);
 		}
 
 		if !fetch limit, config["limit"] {
 			throw new Exception("Parameter 'limit' is required");
 		} else {
-			let this->_limitRows = limit;
+			this->setLimit(limit);
 		}
 
 		if fetch page, config["page"] {
-			let this->_page = page;
+			this->setCurrentPage(page);
 		}
 	}
 
 	/**
 	 * Set the current page number
-	 *
-	 * @param int page
 	 */
 	public function setCurrentPage(int currentPage) -> <QueryBuilder>
 	{
@@ -101,15 +99,59 @@ class QueryBuilder implements \Phalcon\Paginator\AdapterInterface
 	}
 
 	/**
-	 * Returns a slice of the resultset to show in the pagination
+	 * Get the current page number
 	 *
-	 * @return stdClass
+	 * @return int page
+	 */
+	public function getCurrentPage () -> int
+	{
+		return this->_page;
+	}
+
+	/**
+	 * Set current rows limit
+	 */
+	public function setLimit(int limitRows) -> <QueryBuilder>
+	{
+		let this->_limitRows = limitRows;
+
+		return this;
+	}
+
+	/**
+	 * Get current rows limit
+	 */
+	public function getLimit() -> int
+	{
+		return this->_limitRows;
+	}
+
+	/**
+	 * Set query builder object
+	 */
+	public function setQueryBuilder(<Builder> builder) -> <QueryBuilder>
+	{
+		let this->_builder = builder;
+
+		return this;
+	}
+
+	/**
+	 * Get query builder object
+	 */
+	public function getQueryBuilder() -> <Builder>
+	{
+		return this->_builder;
+	}
+
+	/**
+	 * Returns a slice of the resultset to show in the pagination
 	 */
 	public function getPaginate() -> <\stdClass>
 	{
 		var originalBuilder, builder, totalBuilder, totalPages,
 			limit, numberPage, number, query, page, before, items, totalQuery,
-			result, row, rowcount, intTotalPages, next;
+			result, row, rowcount, next;
 
 		let originalBuilder = this->_builder;
 
@@ -179,14 +221,9 @@ class QueryBuilder implements \Phalcon\Paginator\AdapterInterface
 		 */
 		let result = totalQuery->execute(),
 			row = result->getFirst(),
-			rowcount = row->rowcount,
-			totalPages = rowcount / limit;
-
-		let intTotalPages = intval(totalPages);
-		if intTotalPages != totalPages {
-			let totalPages = intTotalPages + 1;
-		}
-
+			rowcount = intval(row->rowcount),
+			totalPages = intval(ceil(rowcount / limit));
+			
 		if numberPage < totalPages {
 			let next = numberPage + 1;
 		} else {

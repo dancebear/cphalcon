@@ -12,12 +12,13 @@
 #include <Zend/zend_interfaces.h>
 
 #include "kernel/main.h"
-#include "kernel/memory.h"
-#include "kernel/object.h"
-#include "kernel/string.h"
 #include "kernel/array.h"
+#include "kernel/object.h"
+#include "kernel/memory.h"
+#include "kernel/string.h"
 #include "ext/spl/spl_exceptions.h"
 #include "kernel/exception.h"
+#include "kernel/operators.h"
 
 
 /*
@@ -65,7 +66,7 @@ ZEPHIR_INIT_CLASS(Phalcon_Annotations_Adapter_Memory) {
  */
 PHP_METHOD(Phalcon_Annotations_Adapter_Memory, read) {
 
-	zval *key_param = NULL, *data, *lowercasedKey, *_0;
+	zval *key_param = NULL, *data, *_0, *_1;
 	zval *key = NULL;
 
 	ZEPHIR_MM_GROW();
@@ -76,21 +77,19 @@ PHP_METHOD(Phalcon_Annotations_Adapter_Memory, read) {
 		RETURN_MM_NULL();
 	}
 
-	if (unlikely(Z_TYPE_P(key_param) == IS_STRING)) {
-		key = key_param;
+	if (likely(Z_TYPE_P(key_param) == IS_STRING)) {
+		zephir_get_strval(key, key_param);
 	} else {
 		ZEPHIR_INIT_VAR(key);
 		ZVAL_EMPTY_STRING(key);
 	}
 
 
-	ZEPHIR_OBS_VAR(data);
-	zephir_read_property_this(&data, this_ptr, SL("_data"), PH_NOISY_CC);
-	ZEPHIR_INIT_VAR(lowercasedKey);
-	zephir_fast_strtolower(lowercasedKey, key);
-	if (zephir_array_isset(data, lowercasedKey)) {
-		zephir_array_fetch(&_0, data, lowercasedKey, PH_NOISY | PH_READONLY TSRMLS_CC);
-		RETURN_CTOR(_0);
+	_0 = zephir_fetch_nproperty_this(this_ptr, SL("_data"), PH_NOISY_CC);
+	ZEPHIR_INIT_VAR(_1);
+	zephir_fast_strtolower(_1, key);
+	if (zephir_array_isset_fetch(&data, _0, _1, 1 TSRMLS_CC)) {
+		RETURN_CTOR(data);
 	}
 	RETURN_MM_BOOL(0);
 
@@ -115,8 +114,8 @@ PHP_METHOD(Phalcon_Annotations_Adapter_Memory, write) {
 		RETURN_MM_NULL();
 	}
 
-	if (unlikely(Z_TYPE_P(key_param) == IS_STRING)) {
-		key = key_param;
+	if (likely(Z_TYPE_P(key_param) == IS_STRING)) {
+		zephir_get_strval(key, key_param);
 	} else {
 		ZEPHIR_INIT_VAR(key);
 		ZVAL_EMPTY_STRING(key);

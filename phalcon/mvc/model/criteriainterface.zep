@@ -19,6 +19,8 @@
 
 namespace Phalcon\Mvc\Model;
 
+use Phalcon\DiInterface;
+
 /**
  * Phalcon\Mvc\Model\CriteriaInterface
  *
@@ -48,7 +50,7 @@ interface CriteriaInterface
 	 * @param string bindParams
 	 * @return Phalcon\Mvc\Model\CriteriaInterface
 	 */
-	public function bind(bindParams);
+	public function bind(array! bindParams);
 
 	/**
 	 * Sets the bind types in the criteria
@@ -57,7 +59,7 @@ interface CriteriaInterface
 	 * @param string bindTypes
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function bindTypes(bindTypes);
+	public function bindTypes(array! bindTypes);
 
 	/**
 	 * Adds the conditions parameter to the criteria
@@ -167,7 +169,7 @@ interface CriteriaInterface
 	 * @param array values
 	 * @return Phalcon\Mvc\Model\Query\Builder
 	 */
-	public function inWhere(expr, values);
+	public function inWhere(string! expr, array! values);
 
 	/**
 	 * Appends a NOT IN condition to the current conditions
@@ -180,7 +182,7 @@ interface CriteriaInterface
 	 * @param array values
 	 * @return Phalcon\Mvc\Model\Query\Builder
 	 */
-	public function notInWhere(expr, values);
+	public function notInWhere(string! expr, array! values);
 
 	/**
 	 * Returns the conditions parameter in the criteria
@@ -225,7 +227,7 @@ interface CriteriaInterface
 	 * @param array data
 	 * @return static
 	 */
-	public static function fromInput(<\Phalcon\DiInterfac> dependencyInjector, string modelName, data);
+	public static function fromInput(<DiInterface> dependencyInjector, string modelName, array! data);
 
 	/**
 	 * Executes a find using the parameters built with the criteria

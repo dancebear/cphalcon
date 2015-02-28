@@ -83,7 +83,7 @@ PHP_METHOD(Phalcon_Mvc_Model_Validator_PresenceOf, validate) {
 	zephir_nts_static zephir_fcall_cache_entry *_3 = NULL;
 	zval *_1;
 	int ZEPHIR_LAST_CALL_STATUS;
-	zval *record, *field = NULL, *value = NULL, *message = NULL, *_0, *_2 = NULL;
+	zval *record, *field = NULL, *value = NULL, *message = NULL, *_0 = NULL, *_2 = NULL;
 
 	ZEPHIR_MM_GROW();
 	zephir_fetch_params(1, 1, 0, &record);
@@ -95,33 +95,33 @@ PHP_METHOD(Phalcon_Mvc_Model_Validator_PresenceOf, validate) {
 		return;
 	}
 	ZEPHIR_INIT_VAR(_0);
-	ZVAL_STRING(_0, "field", 0);
+	ZVAL_STRING(_0, "field", ZEPHIR_TEMP_PARAM_COPY);
 	ZEPHIR_CALL_METHOD(&field, this_ptr, "getoption", NULL, _0);
 	zephir_check_temp_parameter(_0);
 	zephir_check_call_status();
 	if (Z_TYPE_P(field) != IS_STRING) {
-		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_mvc_model_exception_ce, "Field name must be a string", "phalcon/mvc/model/validator/presenceof.zep", 62);
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_mvc_model_exception_ce, "Field name must be a string", "phalcon/mvc/model/validator/presenceof.zep", 67);
 		return;
 	}
 	ZEPHIR_CALL_METHOD(&value, record, "readattribute", NULL, field);
 	zephir_check_call_status();
 	if (ZEPHIR_IS_EMPTY(value)) {
-		ZEPHIR_INIT_BNVAR(_0);
-		ZVAL_STRING(_0, "message", 0);
+		ZEPHIR_INIT_NVAR(_0);
+		ZVAL_STRING(_0, "message", ZEPHIR_TEMP_PARAM_COPY);
 		ZEPHIR_CALL_METHOD(&message, this_ptr, "getoption", NULL, _0);
 		zephir_check_temp_parameter(_0);
 		zephir_check_call_status();
 		if (ZEPHIR_IS_EMPTY(message)) {
 			ZEPHIR_INIT_NVAR(message);
-			ZVAL_STRING(message, ":field is required", 1);
+			ZVAL_STRING(message, "':field' is required", 1);
 		}
 		ZEPHIR_INIT_VAR(_1);
 		array_init_size(_1, 2);
 		zephir_array_update_string(&_1, SL(":field"), &field, PH_COPY | PH_SEPARATE);
 		ZEPHIR_CALL_FUNCTION(&_2, "strtr", &_3, message, _1);
 		zephir_check_call_status();
-		ZEPHIR_INIT_BNVAR(_0);
-		ZVAL_STRING(_0, "PresenceOf", 0);
+		ZEPHIR_INIT_NVAR(_0);
+		ZVAL_STRING(_0, "PresenceOf", ZEPHIR_TEMP_PARAM_COPY);
 		ZEPHIR_CALL_METHOD(NULL, this_ptr, "appendmessage", NULL, _2, field, _0);
 		zephir_check_temp_parameter(_0);
 		zephir_check_call_status();

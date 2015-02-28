@@ -19,6 +19,11 @@
 
 namespace Phalcon\Mvc\Model\Validator;
 
+use Phalcon\Mvc\Model\Exception;
+use Phalcon\Mvc\ModelInterface;
+use Phalcon\Mvc\Model\Validator;
+use Phalcon\Mvc\Model\ValidatorInterface;
+
 /**
  * Phalcon\Mvc\Model\Validator\PresenceOf
  *
@@ -45,7 +50,7 @@ namespace Phalcon\Mvc\Model\Validator;
  *</code>
  *
  */
-class PresenceOf extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Model\ValidatorInterface
+class PresenceOf extends Validator implements ValidatorInterface
 {
 	/**
 	 * Executes the validator
@@ -53,27 +58,27 @@ class PresenceOf extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 	 * @param Phalcon\Mvc\ModelInterface record
 	 * @return boolean
 	 */
-	public function validate(<\Phalcon\Mvc\ModelInterface> record) -> boolean
+	public function validate(<ModelInterface> record) -> boolean
 	{
 		var field, value, message;
 
 		let field = this->getOption("field");
 		if typeof field != "string" {
-			throw new \Phalcon\Mvc\Model\Exception("Field name must be a string");
+			throw new Exception("Field name must be a string");
 		}
 
 		/**
 		 * A value is null when it is identical to null or a empty string
 		 */
 		let value = record->readAttribute(field);
-		if empty value {
+		if is_null(value) || (is_string(value) && !strlen(value)) {
 
 			/**
 			 * Check if the developer has defined a custom message
 			 */
 			let message = this->getOption("message");
 			if empty message {
-				let message = ":field is required";
+				let message = "':field' is required";
 			}
 
 			this->appendMessage(strtr(message, [":field": field]), field, "PresenceOf");
@@ -81,6 +86,5 @@ class PresenceOf extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 		}
 
 		return true;
-
 	}
 }

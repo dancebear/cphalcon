@@ -20,7 +20,12 @@
 
 namespace Phalcon;
 
+use Phalcon\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
+use Phalcon\Di\Service;
 use Phalcon\Di\ServiceInterface;
+use Phalcon\Di\Exception;
+use Phalcon\Events\EventsAwareInterface;
 
 /**
  * Phalcon\Di
@@ -54,7 +59,7 @@ use Phalcon\Di\ServiceInterface;
  *
  *</code>
  */
-class Di implements \Phalcon\DiInterface
+class Di implements DiInterface, \Phalcon\Events\EventsAwareInterface
 {
 
 	protected _services;
@@ -62,6 +67,13 @@ class Di implements \Phalcon\DiInterface
 	protected _sharedInstances;
 
 	protected _freshInstance = false;
+
+	/**
+	 * Events Manager
+	 *
+	 * @var Phalcon\Events\ManagerInterface
+	 */
+	protected _eventsManager;
 
 	protected static _default;
 
@@ -87,10 +99,10 @@ class Di implements \Phalcon\DiInterface
 	 * @param boolean shared
 	 * @return Phalcon\Di\ServiceInterface
 	 */
-	public function set(string! name, definition, shared=false) -> <ServiceInterface>
+	public function set(string! name, definition, boolean shared = false) -> <ServiceInterface>
 	{
 		var service;
-		let service = new \Phalcon\Di\Service(name, definition, shared),
+		let service = new Service(name, definition, shared),
 			this->_services[name] = service;
 		return service;
 	}
@@ -102,10 +114,10 @@ class Di implements \Phalcon\DiInterface
 	 * @param mixed definition
 	 * @return Phalcon\Di\ServiceInterface
 	 */
-	public function setShared(string! name, definition) -> <ServiceInterface>
+	public function setShared(string! name, var definition) -> <ServiceInterface>
 	{
 		var service;
-		let service = new \Phalcon\Di\Service(name, definition, true),
+		let service = new Service(name, definition, true),
 			this->_services[name] = service;
 		return service;
 	}
@@ -130,12 +142,12 @@ class Di implements \Phalcon\DiInterface
 	 * @param boolean shared
 	 * @return Phalcon\Di\ServiceInterface|false
 	 */
-	public function attempt(string! name, definition, boolean shared=false) -> <ServiceInterface> | boolean
+	public function attempt(string! name, definition, boolean shared = false) -> <ServiceInterface> | boolean
 	{
 		var service;
 
 		if !isset this->_services[name] {
-			let service = new \Phalcon\Di\Service(name, definition, shared),
+			let service = new Service(name, definition, shared),
 				this->_services[name] = service;
 			return service;
 		}
@@ -170,7 +182,7 @@ class Di implements \Phalcon\DiInterface
 			return service->getDefinition();
 		}
 
-		throw new \Phalcon\Di\Exception("Service '" . name . "' wasn't found in the dependency injection container");
+		throw new Exception("Service '" . name . "' wasn't found in the dependency injection container");
 	}
 
 	/**
@@ -187,7 +199,7 @@ class Di implements \Phalcon\DiInterface
 			return service;
 		}
 
-		throw new \Phalcon\Di\Exception("Service '" . name . "' wasn't found in the dependency injection container");
+		throw new Exception("Service '" . name . "' wasn't found in the dependency injection container");
 	}
 
 	/**
@@ -197,9 +209,15 @@ class Di implements \Phalcon\DiInterface
 	 * @param array parameters
 	 * @return mixed
 	 */
-	public function get(string! name, parameters=null)
+	public function get(string! name, parameters = null)
 	{
-		var service, instance;
+		var service, instance, reflection, eventsManager;
+
+		let eventsManager = <\Phalcon\Events\ManagerInterface> this->getEventsManager();
+
+		if typeof eventsManager == "object" {
+			eventsManager->fire("di:beforeServiceResolve", this, ["name": name, "parameters": parameters]);
+		}
 
 		if fetch service, this->_services[name] {
 			/**
@@ -213,15 +231,30 @@ class Di implements \Phalcon\DiInterface
 			if class_exists(name) {
 				if typeof parameters == "array" {
 					if count(parameters) {
-						let instance = create_instance_params(name, parameters);
+						if is_php_version("5.6") {
+							let reflection = new \ReflectionClass(name),
+								instance = reflection->newInstanceArgs(parameters);
+						} else {
+							let instance = create_instance_params(name, parameters);
+						}
+					} else {
+						if is_php_version("5.6") {
+							let reflection = new \ReflectionClass(name),
+								instance = reflection->newInstance();
+						} else {
+							let instance = create_instance(name);
+						}
+					}
+				} else {
+					if is_php_version("5.6") {
+						let reflection = new \ReflectionClass(name),
+							instance = reflection->newInstance();
 					} else {
 						let instance = create_instance(name);
 					}
-				} else {
-					let instance = create_instance(name);
 				}
 			} else {
-				throw new \Phalcon\Di\Exception("Service '" . name . "' wasn't found in the dependency injection container");
+				throw new Exception("Service '" . name . "' wasn't found in the dependency injection container");
 			}
 		}
 
@@ -229,9 +262,22 @@ class Di implements \Phalcon\DiInterface
 		 * Pass the DI itself if the instance implements \Phalcon\Di\InjectionAwareInterface
 		 */
 		if typeof instance == "object" {
-			if method_exists(instance, "setDI") {
+			if instance instanceof InjectionAwareInterface {
 				instance->setDI(this);
 			}
+		}
+
+		if typeof eventsManager == "object" {
+			/**
+			 * Pass the EventsManager if the instance implements \Phalcon\Events\EventsAwareInterface
+			 */
+			if typeof instance == "object" {
+				if instance instanceof EventsAwareInterface {
+					instance->setEventsManager(eventsManager);
+				}
+			}
+
+			eventsManager->fire("di:afterServiceResolve", this, ["name": name, "parameters": parameters, "instance": instance]);
 		}
 
 		return instance;
@@ -244,7 +290,7 @@ class Di implements \Phalcon\DiInterface
 	 * @param array parameters
 	 * @return mixed
 	 */
-	public function getShared(string! name, parameters=null)
+	public function getShared(string! name, parameters = null)
 	{
 		var instance;
 
@@ -296,7 +342,7 @@ class Di implements \Phalcon\DiInterface
 	 *
 	 * @return Phalcon\Di\Service[]
 	 */
-	public function getServices() -> <\Phalcon\Di\Service[]>
+	public function getServices() -> <Service[]>
 	{
 		return this->_services;
 	}
@@ -323,7 +369,7 @@ class Di implements \Phalcon\DiInterface
 	 * @param mixed definition
 	 * @return boolean
 	 */
-	public function offsetSet(string! name, definition) -> boolean
+	public function offsetSet(string! name, var definition) -> boolean
 	{
 		this->setShared(name, definition);
 		return true;
@@ -355,13 +401,33 @@ class Di implements \Phalcon\DiInterface
 	}
 
 	/**
+	 * Sets the event manager
+	 *
+	 * @param Phalcon\Events\ManagerInterface eventsManager
+	 */
+	public function setEventsManager(<\Phalcon\Events\ManagerInterface> eventsManager)
+	{
+		let this->_eventsManager = eventsManager;
+	}
+
+	/**
+	 * Returns the internal event manager
+	 *
+	 * @return Phalcon\Events\ManagerInterface
+	 */
+	public function getEventsManager() -> <\Phalcon\Events\ManagerInterface>
+	{
+		return this->_eventsManager;
+	}
+
+	/**
 	 * Magic method to get or set services using setters/getters
 	 *
 	 * @param string method
 	 * @param array arguments
 	 * @return mixed
 	 */
-	public function __call(string! method, arguments=null)
+	public function __call(string! method, arguments = null)
 	{
 		var instance, possibleService, services, definition;
 
@@ -394,7 +460,7 @@ class Di implements \Phalcon\DiInterface
 		/**
 		 * The method doesn't start with set/get throw an exception
 		 */
-		throw new \Phalcon\Di\Exception("Call to undefined method or service '" . method . "'");
+		throw new Exception("Call to undefined method or service '" . method . "'");
 	}
 
 	/**
@@ -402,7 +468,7 @@ class Di implements \Phalcon\DiInterface
 	 *
 	 * @param Phalcon\DiInterface dependencyInjector
 	 */
-	public static function setDefault(<\Phalcon\DiInterface> dependencyInjector)
+	public static function setDefault(<DiInterface> dependencyInjector)
 	{
 		let self::_default = dependencyInjector;
 	}
@@ -412,7 +478,7 @@ class Di implements \Phalcon\DiInterface
 	 *
 	 * @return Phalcon\DiInterface
 	 */
-	public static function getDefault() -> <\Phalcon\DiInterface>
+	public static function getDefault() -> <DiInterface>
 	{
 		return self::_default;
 	}
@@ -424,5 +490,4 @@ class Di implements \Phalcon\DiInterface
 	{
 		let self::_default = null;
 	}
-
 }

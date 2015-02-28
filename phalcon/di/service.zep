@@ -19,7 +19,10 @@
 
 namespace Phalcon\Di;
 
+use Phalcon\DiInterface;
 use Phalcon\Di\Exception;
+use Phalcon\Di\ServiceInterface;
+use Phalcon\Di\Service\Builder;
 
 /**
  * Phalcon\Di\Service
@@ -32,7 +35,7 @@ use Phalcon\Di\Exception;
  *<code>
  *
  */
-class Service implements \Phalcon\Di\ServiceInterface
+class Service implements ServiceInterface
 {
 
 	protected _name;
@@ -52,7 +55,7 @@ class Service implements \Phalcon\Di\ServiceInterface
 	 * @param mixed definition
 	 * @param boolean shared
 	 */
-	public function __construct(string! name, definition, boolean shared=false)
+	public final function __construct(string! name, definition, boolean shared = false)
 	{
 		let this->_name = name,
 			this->_definition = definition,
@@ -126,11 +129,11 @@ class Service implements \Phalcon\Di\ServiceInterface
 	 * @param Phalcon\DiInterface dependencyInjector
 	 * @return mixed
 	 */
-	public function resolve(parameters=null, <\Phalcon\DiInterface> dependencyInjector=null)
+	public function resolve(parameters = null, <DiInterface> dependencyInjector = null)
 	{
 
 		boolean found;
-		var shared, definition, sharedInstance, instance, builder;
+		var shared, definition, sharedInstance, instance, builder, reflection;
 
 		let shared = this->_shared;
 
@@ -156,12 +159,27 @@ class Service implements \Phalcon\Di\ServiceInterface
 			if class_exists(definition) {
 				if typeof parameters == "array" {
 					if count(parameters) {
-						let instance = create_instance_params(definition, parameters);
+						if is_php_version("5.6") {
+							let reflection = new \ReflectionClass(definition),
+								instance = reflection->newInstanceArgs(parameters);
+						} else {
+							let instance = create_instance_params(definition, parameters);
+						}
+					} else {
+						if is_php_version("5.6") {
+							let reflection = new \ReflectionClass(definition),
+								instance = reflection->newInstance();
+						} else {
+							let instance = create_instance(definition);
+						}
+					}
+				} else {
+					if is_php_version("5.6") {
+						let reflection = new \ReflectionClass(definition),
+							instance = reflection->newInstance();
 					} else {
 						let instance = create_instance(definition);
 					}
-				} else {
-					let instance = create_instance(definition);
 				}
 			} else {
 				let found = false;
@@ -186,7 +204,7 @@ class Service implements \Phalcon\Di\ServiceInterface
 				 * Array definitions require a 'className' parameter
 				 */
 				if typeof definition == "array" {
-					let builder = new \Phalcon\Di\Service\Builder(),
+					let builder = new Builder(),
 						instance = builder->build(dependencyInjector, definition, parameters);
 				} else {
 					let found = false;
@@ -220,7 +238,7 @@ class Service implements \Phalcon\Di\ServiceInterface
 	 * @param array parameter
 	 * @return Phalcon\Di\Service
 	 */
-	public function setParameter(int position, array! parameter) -> <\Phalcon\Di\Service>
+	public function setParameter(int position, array! parameter) -> <Service>
 	{
 		var definition, arguments;
 
@@ -283,7 +301,7 @@ class Service implements \Phalcon\Di\ServiceInterface
 	 *
 	 * @return bool
 	 */
-	public function isResolved()
+	public function isResolved() -> boolean
 	{
 		return this->_resolved;
 	}
@@ -294,7 +312,7 @@ class Service implements \Phalcon\Di\ServiceInterface
 	 * @param array attributes
 	 * @return Phalcon\Di\Service
 	 */
-	public static function __set_state(array! attributes) -> <\Phalcon\Di\Service>
+	public static function __set_state(array! attributes) -> <Service>
 	{
 		var name, definition, shared;
 

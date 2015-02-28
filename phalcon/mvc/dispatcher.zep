@@ -19,6 +19,12 @@
 
 namespace Phalcon\Mvc;
 
+use Phalcon\Mvc\DispatcherInterface;
+use Phalcon\Mvc\Dispatcher\Exception;
+use Phalcon\Events\ManagerInterface;
+use Phalcon\Http\ResponseInterface;
+use Phalcon\Mvc\ControllerInterface;
+
 /**
  * Phalcon\Mvc\Dispatcher
  *
@@ -42,7 +48,7 @@ namespace Phalcon\Mvc;
  *
  *</code>
  */
-class Dispatcher extends \Phalcon\Dispatcher implements \Phalcon\Mvc\DispatcherInterface
+class Dispatcher extends \Phalcon\Dispatcher implements DispatcherInterface
 {
 
 	protected _handlerSuffix = "Controller";
@@ -117,19 +123,19 @@ class Dispatcher extends \Phalcon\Dispatcher implements \Phalcon\Mvc\DispatcherI
 	 * @param string message
 	 * @param int exceptionCode
 	 */
-	protected function _throwDispatchException(string! message, int exceptionCode=0)
+	protected function _throwDispatchException(string! message, int exceptionCode = 0)
 	{
-		var eventsManager, dependencyInjector, response, exception;
+		var dependencyInjector, response, exception;
 
 		let dependencyInjector = this->_dependencyInjector;
 		if typeof dependencyInjector != "object" {
-			throw new \Phalcon\Mvc\Dispatcher\Exception(
+			throw new Exception(
 				"A dependency injection container is required to access the 'response' service",
 				\Phalcon\Dispatcher::EXCEPTION_NO_DI
 			);
 		}
 
-		let response = <\Phalcon\Http\ResponseInterface> dependencyInjector->getShared("response");
+		let response = <ResponseInterface> dependencyInjector->getShared("response");
 
 		/**
 		 * Dispatcher exceptions automatically sends a 404 status
@@ -139,13 +145,10 @@ class Dispatcher extends \Phalcon\Dispatcher implements \Phalcon\Mvc\DispatcherI
 		/**
 		 * Create the real exception
 		 */
-		let exception = new \Phalcon\Mvc\Dispatcher\Exception(message, exceptionCode);
+		let exception = new Exception(message, exceptionCode);
 
-		let eventsManager = <\Phalcon\Events\Manager> this->_eventsManager;
-		if typeof eventsManager == "object" {
-			if eventsManager->fire("dispatch:beforeException", this, exception) === false {
-				return false;
-			}
+		if this->_handleException(exception) === false {
+			return false;
 		}
 
 		/**
@@ -159,16 +162,15 @@ class Dispatcher extends \Phalcon\Dispatcher implements \Phalcon\Mvc\DispatcherI
 	 *
 	 * @param \Exception exception
 	 */
-	protected function _handleException(<Exception> exception)
+	protected function _handleException(<\Exception> exception)
 	{
 		var eventsManager;
-		let eventsManager = this->_eventsManager;
+		let eventsManager = <ManagerInterface> this->_eventsManager;
 		if typeof eventsManager == "object" {
 			if eventsManager->fire("dispatch:beforeException", this, exception) === false {
 				return false;
 			}
 		}
-
 	}
 
 	/**
@@ -186,7 +188,7 @@ class Dispatcher extends \Phalcon\Dispatcher implements \Phalcon\Mvc\DispatcherI
 	 *
 	 * @return Phalcon\Mvc\ControllerInterface
 	 */
-	public function getLastController() -> <\Phalcon\Mvc\ControllerInterface>
+	public function getLastController() -> <ControllerInterface>
 	{
 		return this->_lastHandler;
 	}
@@ -196,9 +198,8 @@ class Dispatcher extends \Phalcon\Dispatcher implements \Phalcon\Mvc\DispatcherI
 	 *
 	 * @return Phalcon\Mvc\ControllerInterface
 	 */
-	public function getActiveController() -> <\Phalcon\Mvc\ControllerInterface>
+	public function getActiveController() -> <ControllerInterface>
 	{
 		return this->_activeHandler;
 	}
-
 }

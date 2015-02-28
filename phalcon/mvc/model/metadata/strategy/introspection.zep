@@ -19,12 +19,17 @@
 
 namespace Phalcon\Mvc\Model\MetaData\Strategy;
 
+use Phalcon\Mvc\ModelInterface;
+use Phalcon\Mvc\Model\Exception;
+use Phalcon\Mvc\Model\MetaData;
+use Phalcon\Mvc\Model\MetaData\StrategyInterface;
+
 /**
  * Phalcon\Mvc\Model\MetaData\Strategy\Instrospection
  *
  * Queries the table meta-data in order to instrospect the model's metadata
  */
-class Introspection
+class Introspection implements StrategyInterface
 {
 
 	/**
@@ -34,11 +39,11 @@ class Introspection
 	 * @param Phalcon\DiInterface dependencyInjector
 	 * @return array
 	 */
-	public function getMetaData(<\Phalcon\Mvc\ModelInterface> model, <\Phalcon\DiInterface> dependencyInjector)
+	public final function getMetaData(<ModelInterface> model, <\Phalcon\DiInterface> dependencyInjector) -> array
 	{
 		var schema, table, readConnection, columns, attributes,
 			primaryKeys, nonPrimaryKeys, completeTable, numericTyped, notNull,
-			fieldTypes, automaticDefault, identityField, fieldBindTypes, column, fieldName;
+			fieldTypes, automaticDefault, identityField, fieldBindTypes, defaultValues, column, fieldName, defaultValue;
 
 		let schema    = model->getSchema(),
 			table     = model->getSource();
@@ -59,7 +64,7 @@ class Introspection
 			/**
 			 * The table not exists
 			 */
-			throw new \Phalcon\Mvc\Model\Exception("Table '" . completeTable . "' doesn't exist on database when dumping meta-data for " . get_class(model));
+			throw new Exception("Table '" . completeTable . "' doesn't exist on database when dumping meta-data for " . get_class(model));
 		}
 
 		/**
@@ -77,7 +82,7 @@ class Introspection
 			/**
 			 * The table not exists
 			 */
-			throw new \Phalcon\Mvc\Model\Exception("Cannot obtain table columns for the mapped source '" . completeTable . "' used in model " . get_class(model));
+			throw new Exception("Cannot obtain table columns for the mapped source '" . completeTable . "' used in model " . get_class(model));
 		}
 
 		/**
@@ -92,6 +97,7 @@ class Introspection
 		let fieldBindTypes = [];
 		let automaticDefault = [];
 		let identityField = false;
+		let defaultValues = [];
 
 		for column in columns {
 
@@ -137,22 +143,33 @@ class Introspection
 			 * To mark how the fields must be escaped
 			 */
 			let fieldBindTypes[fieldName] = column->getBindType();
+
+			/**
+			 * If column has default value or column is nullable and default value is null
+			 */
+			let defaultValue = column->getDefault();
+			if defaultValue !== null || column->isNotNull() === false {
+				if !column->isAutoIncrement() {
+					let defaultValues[fieldName] = defaultValue;
+				}
+			}
 		}
 
 		/**
 		 * Create an array using the MODELS_* constants as indexes
 		 */
 		return [
-			0: attributes,
-			1: primaryKeys,
-			2: nonPrimaryKeys,
-			3: notNull,
-			4: fieldTypes,
-			5: numericTyped,
-			8: identityField,
-			9: fieldBindTypes,
-			10: automaticDefault,
-			11: automaticDefault
+			MetaData::MODELS_ATTRIBUTES               : attributes,
+			MetaData::MODELS_PRIMARY_KEY              : primaryKeys,
+			MetaData::MODELS_NON_PRIMARY_KEY          : nonPrimaryKeys,
+			MetaData::MODELS_NOT_NULL                 : notNull,
+			MetaData::MODELS_DATA_TYPES               : fieldTypes,
+			MetaData::MODELS_DATA_TYPES_NUMERIC       : numericTyped,
+			MetaData::MODELS_IDENTITY_COLUMN          : identityField,
+			MetaData::MODELS_DATA_TYPES_BIND          : fieldBindTypes,
+			MetaData::MODELS_AUTOMATIC_DEFAULT_INSERT : automaticDefault,
+			MetaData::MODELS_AUTOMATIC_DEFAULT_UPDATE : automaticDefault,
+			MetaData::MODELS_DEFAULT_VALUES           : defaultValues
 		];
 	}
 
@@ -163,7 +180,7 @@ class Introspection
 	 * @param Phalcon\DiInterface dependencyInjector
 	 * @return array
 	 */
-	public function getColumnMaps(<\Phalcon\Mvc\ModelInterface> model, <\Phalcon\DiInterface> dependencyInjector)
+	public final function getColumnMaps(<ModelInterface> model, <\Phalcon\DiInterface> dependencyInjector) -> array
 	{
 		var orderedColumnMap, userColumnMap, reversedColumnMap, name, userName;
 
@@ -177,7 +194,7 @@ class Introspection
 
 			let userColumnMap = model->{"columnMap"}();
 			if typeof userColumnMap != "array" {
-				throw new \Phalcon\Mvc\Model\Exception("columnMap() not returned an array");
+				throw new Exception("columnMap() not returned an array");
 			}
 
 			let reversedColumnMap = [], orderedColumnMap = userColumnMap;

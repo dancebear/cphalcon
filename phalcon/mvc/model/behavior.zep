@@ -19,6 +19,8 @@
 
 namespace Phalcon\Mvc\Model;
 
+use Phalcon\Mvc\ModelInterface;
+
 /**
  * Phalcon\Mvc\Model\Behavior
  *
@@ -40,10 +42,8 @@ abstract class Behavior
 
 	/**
 	 * Checks whether the behavior must take action on certain event
-	 *
-	 * @param string eventName
 	 */
-	protected function mustTakeAction(string! eventName)
+	protected function mustTakeAction(string! eventName) -> boolean
 	{
 		return isset this->_options[eventName];
 	}
@@ -54,7 +54,7 @@ abstract class Behavior
 	 * @param string eventName
 	 * @return array
 	 */
-	protected function getOptions(string! eventName=null)
+	protected function getOptions(string! eventName = null)
 	{
 		var options, eventOptions;
 
@@ -74,7 +74,7 @@ abstract class Behavior
 	 * @param string type
 	 * @param Phalcon\Mvc\ModelInterface model
 	 */
-	public function notify(string type, <\Phalcon\Mvc\ModelInterface> model)
+	public function notify(string type, <ModelInterface> model)
 	{
 		return null;
 	}
@@ -86,7 +86,7 @@ abstract class Behavior
 	 * @param string method
 	 * @param array arguments
 	 */
-	public function missingMethod(<\Phalcon\Mvc\ModelInterface> model, string method, arguments=null)
+	public function missingMethod(<ModelInterface> model, string method, arguments = null)
 	{
 		return null;
 	}

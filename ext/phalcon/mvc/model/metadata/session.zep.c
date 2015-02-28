@@ -18,6 +18,7 @@
 #include "kernel/concat.h"
 #include "ext/spl/spl_exceptions.h"
 #include "kernel/exception.h"
+#include "kernel/operators.h"
 
 
 /*
@@ -69,10 +70,9 @@ ZEPHIR_INIT_CLASS(Phalcon_Mvc_Model_MetaData_Session) {
  */
 PHP_METHOD(Phalcon_Mvc_Model_MetaData_Session, __construct) {
 
-	zval *options = NULL, *prefix, *_0;
+	zval *options = NULL, *prefix;
 
-	ZEPHIR_MM_GROW();
-	zephir_fetch_params(1, 0, 1, &options);
+	zephir_fetch_params(0, 0, 1, &options);
 
 	if (!options) {
 		options = ZEPHIR_GLOBAL(global_null);
@@ -84,10 +84,6 @@ PHP_METHOD(Phalcon_Mvc_Model_MetaData_Session, __construct) {
 			zephir_update_property_this(this_ptr, SL("_prefix"), prefix TSRMLS_CC);
 		}
 	}
-	ZEPHIR_INIT_VAR(_0);
-	array_init(_0);
-	zephir_update_property_this(this_ptr, SL("_metaData"), _0 TSRMLS_CC);
-	ZEPHIR_MM_RESTORE();
 
 }
 
@@ -99,7 +95,7 @@ PHP_METHOD(Phalcon_Mvc_Model_MetaData_Session, __construct) {
  */
 PHP_METHOD(Phalcon_Mvc_Model_MetaData_Session, read) {
 
-	zval *key_param = NULL, *session = NULL, *prefixKey, *metaData, *_SESSION, *_0, *_1;
+	zval *key_param = NULL, *metaData, *_SESSION, *_0, *_1, *_2;
 	zval *key = NULL;
 
 	ZEPHIR_MM_GROW();
@@ -110,8 +106,8 @@ PHP_METHOD(Phalcon_Mvc_Model_MetaData_Session, read) {
 		RETURN_MM_NULL();
 	}
 
-	if (unlikely(Z_TYPE_P(key_param) == IS_STRING)) {
-		key = key_param;
+	if (likely(Z_TYPE_P(key_param) == IS_STRING)) {
+		zephir_get_strval(key, key_param);
 	} else {
 		ZEPHIR_INIT_VAR(key);
 		ZVAL_EMPTY_STRING(key);
@@ -119,15 +115,12 @@ PHP_METHOD(Phalcon_Mvc_Model_MetaData_Session, read) {
 
 
 	zephir_get_global(&_SESSION, SS("_SESSION") TSRMLS_CC);
-	ZEPHIR_CPY_WRT(session, _SESSION);
-	_0 = zephir_fetch_nproperty_this(this_ptr, SL("_prefix"), PH_NOISY_CC);
-	ZEPHIR_INIT_VAR(prefixKey);
-	ZEPHIR_CONCAT_SV(prefixKey, "$PMM$", _0);
-	if (zephir_array_isset(session, prefixKey)) {
-		zephir_array_fetch(&_1, session, prefixKey, PH_NOISY | PH_READONLY TSRMLS_CC);
-		if (zephir_array_isset_fetch(&metaData, _1, key, 1 TSRMLS_CC)) {
-			RETURN_CTOR(metaData);
-		}
+	_1 = zephir_fetch_nproperty_this(this_ptr, SL("_prefix"), PH_NOISY_CC);
+	ZEPHIR_INIT_VAR(_2);
+	ZEPHIR_CONCAT_SV(_2, "$PMM$", _1);
+	zephir_array_fetch(&_0, _SESSION, _2, PH_READONLY, "phalcon/mvc/model/metadata/session.zep", 70 TSRMLS_CC);
+	if (zephir_array_isset_fetch(&metaData, _0, key, 1 TSRMLS_CC)) {
+		RETURN_CTOR(metaData);
 	}
 	RETURN_MM_NULL();
 
@@ -152,8 +145,8 @@ PHP_METHOD(Phalcon_Mvc_Model_MetaData_Session, write) {
 		RETURN_MM_NULL();
 	}
 
-	if (unlikely(Z_TYPE_P(key_param) == IS_STRING)) {
-		key = key_param;
+	if (likely(Z_TYPE_P(key_param) == IS_STRING)) {
+		zephir_get_strval(key, key_param);
 	} else {
 		ZEPHIR_INIT_VAR(key);
 		ZVAL_EMPTY_STRING(key);

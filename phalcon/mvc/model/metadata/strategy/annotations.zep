@@ -19,9 +19,14 @@
 
 namespace Phalcon\Mvc\Model\MetaData\Strategy;
 
+use Phalcon\DiInterface;
 use Phalcon\Db\Column;
+use Phalcon\Mvc\ModelInterface;
+use Phalcon\Mvc\Model\MetaData;
+use Phalcon\Mvc\Model\MetaData\StrategyInterface;
+use Phalcon\Mvc\Model\Exception;
 
-class Annotations
+class Annotations implements StrategyInterface
 {
 	/**
 	 * The meta-data is obtained by reading the column descriptions from the database information schema
@@ -30,22 +35,22 @@ class Annotations
 	 * @param Phalcon\DiInterface dependencyInjector
 	 * @return array
 	 */
-	public function getMetaData(<\Phalcon\Mvc\ModelInterface> model, <\Phalcon\DiInterface> dependencyInjector)
+	public final function getMetaData(<ModelInterface> model, <DiInterface> dependencyInjector) -> array
 	{
 		var annotations, className, reflection, propertiesAnnotations;
-		var property, propAnnotations, columnAnnotation, feature;
+		var property, propAnnotations, columnAnnotation, columnName, feature;
 		var fieldTypes, fieldBindTypes, numericTyped, primaryKeys, nonPrimaryKeys, identityField,
-			notNull, attributes, automaticDefault;
+			notNull, attributes, automaticDefault, defaultValues, defaultValue;
 
 		if typeof dependencyInjector != "object" {
-			throw new \Phalcon\Mvc\Model\Exception("The dependency injector is invalid");
+			throw new Exception("The dependency injector is invalid");
 		}
 
 		let annotations = dependencyInjector->get("annotations");
 
 		let className = get_class(model), reflection = annotations->get(className);
 		if typeof reflection != "object" {
-			throw new \Phalcon\Mvc\Model\Exception("No annotations were found in class " . className);
+			throw new Exception("No annotations were found in class " . className);
 		}
 
 		/**
@@ -53,7 +58,7 @@ class Annotations
 		 */
 		let propertiesAnnotations = reflection->getPropertiesAnnotations();
 		if !count(propertiesAnnotations) {
-			throw new \Phalcon\Mvc\Model\Exception("No properties with annotations were found in class " . className);
+			throw new Exception("No properties with annotations were found in class " . className);
 		}
 
 		/**
@@ -67,7 +72,8 @@ class Annotations
 			fieldTypes = [],
 			fieldBindTypes = [],
 			automaticDefault = [],
-			identityField = false;
+			identityField = false,
+			defaultValues = [];
 
 		for property, propAnnotations in propertiesAnnotations {
 
@@ -84,33 +90,42 @@ class Annotations
 			let columnAnnotation = propAnnotations->get("Column");
 
 			/**
+			 * Check if annotation has the 'column' named parameter
+			 */
+			let columnName = columnAnnotation->getNamedParameter("column");
+
+			if empty columnName {
+				let columnName = property;
+			}
+
+			/**
 			 * Check if annotation has the 'type' named parameter
 			 */
 			let feature = columnAnnotation->getNamedParameter("type");
 
 			if feature == "integer" {
 				let fieldTypes[property] = Column::TYPE_INTEGER,
-					fieldBindTypes[property] = 1,
-					numericTyped[property] = true;
+					fieldBindTypes[columnName] = Column::BIND_PARAM_INT,
+					numericTyped[columnName] = true;
 			} else {
 				if feature == "decimal" {
-					let fieldTypes[property] = 3,
-						fieldBindTypes[property] = 32,
-						numericTyped[property] = true;
+					let fieldTypes[columnName] = Column::TYPE_DECIMAL,
+						fieldBindTypes[columnName] = Column::BIND_PARAM_DECIMAL,
+						numericTyped[columnName] = true;
 				} else {
 					if feature == "boolean" {
-						let fieldTypes[property] = 8,
-							fieldBindTypes[property] = 5;
+						let fieldTypes[columnName] = 8,
+							fieldBindTypes[columnName] = 5;
 					} else {
 						if feature == "date" {
-							let fieldTypes[property] = 1;
+							let fieldTypes[columnName] = 1;
 						} else {
 							/**
 							 * By default all columns are varchar/string
 							 */
-							let fieldTypes[property] = Column::TYPE_VARCHAR;
+							let fieldTypes[columnName] = Column::TYPE_VARCHAR;
 						}
-						let fieldBindTypes[property] = Column::TYPE_VARCHAR;
+						let fieldBindTypes[columnName] = Column::BIND_PARAM_STR;
 					}
 				}
 			}
@@ -119,42 +134,51 @@ class Annotations
 			 * All columns marked with the 'Primary' annotation are considered primary keys
 			 */
 			if propAnnotations->has("Primary") {
-				let primaryKeys[] = property;
+				let primaryKeys[] = columnName;
 			} else {
-				let nonPrimaryKeys[] = property;
+				let nonPrimaryKeys[] = columnName;
 			}
 
 			/**
 			 * All columns marked with the 'Identity' annotation are considered the column identity
 			 */
 			if propAnnotations->has("Identity") {
-				let identityField = property;
+				let identityField = columnName;
 			}
 
 			/**
 			 * Check if the column
 			 */
 			if !columnAnnotation->getNamedParameter("nullable") {
-				let notNull[] = property;
+				let notNull[] = columnName;
 			}
 
-			let attributes[] = property;
+			/**
+			 * If column has default value or column is nullable and default value is null
+			 */
+			let defaultValue = columnAnnotation->getNamedParameter("default");
+			if defaultValue !== null || columnAnnotation->getNamedParameter("nullable") {
+				let defaultValues[columnName] = defaultValue;
+			}
+
+			let attributes[] = columnName;
 		}
 
 		/**
 		 * Create an array using the MODELS_* constants as indexes
 		 */
 		return [
-			0: attributes,
-			1: primaryKeys,
-			2: nonPrimaryKeys,
-			3: notNull,
-			4: fieldTypes,
-			5: numericTyped,
-			8: identityField,
-			9: fieldBindTypes,
-			10: automaticDefault,
-			11: automaticDefault
+			MetaData::MODELS_ATTRIBUTES               : attributes,
+			MetaData::MODELS_PRIMARY_KEY              : primaryKeys,
+			MetaData::MODELS_NON_PRIMARY_KEY          : nonPrimaryKeys,
+			MetaData::MODELS_NOT_NULL                 : notNull,
+			MetaData::MODELS_DATA_TYPES               : fieldTypes,
+			MetaData::MODELS_DATA_TYPES_NUMERIC       : numericTyped,
+			MetaData::MODELS_IDENTITY_COLUMN          : identityField,
+			MetaData::MODELS_DATA_TYPES_BIND          : fieldBindTypes,
+			MetaData::MODELS_AUTOMATIC_DEFAULT_INSERT : automaticDefault,
+			MetaData::MODELS_AUTOMATIC_DEFAULT_UPDATE : automaticDefault,
+			MetaData::MODELS_DEFAULT_VALUES           : defaultValues
 		];
 	}
 
@@ -164,10 +188,66 @@ class Annotations
 	 * @param Phalcon\Mvc\ModelInterface model
 	 * @param Phalcon\DiInterface dependencyInjector
 	 * @return array
-	 * @todo Not implemented
 	 */
-	public function getColumnMaps(<\Phalcon\Mvc\ModelInterface> model, <\Phalcon\DiInterface> dependencyInjector)
+	public final function getColumnMaps(<ModelInterface> model, <\Phalcon\DiInterface> dependencyInjector)
 	{
-	}
+		var annotations, className, reflection, propertiesAnnotations;
+		var property, propAnnotations, columnAnnotation, columnName;
+		var orderedColumnMap, reversedColumnMap;
 
+		if typeof dependencyInjector != "object" {
+			throw new Exception("The dependency injector is invalid");
+		}
+
+		let annotations = dependencyInjector->get("annotations");
+
+		let className = get_class(model), reflection = annotations->get(className);
+		if typeof reflection != "object" {
+			throw new Exception("No annotations were found in class " . className);
+		}
+
+		/**
+		 * Get the properties defined in
+		 */
+		let propertiesAnnotations = reflection->getPropertiesAnnotations();
+		if !count(propertiesAnnotations) {
+			throw new Exception("No properties with annotations were found in class " . className);
+		}
+
+		let orderedColumnMap = null, reversedColumnMap = null;
+
+		for property, propAnnotations in propertiesAnnotations {
+
+			/**
+			 * All columns marked with the 'Column' annotation are considered columns
+			 */
+			if !propAnnotations->has("Column") {
+				continue;
+			}
+
+			/**
+			 * Fetch the 'column' annotation
+			 */
+			let columnAnnotation = propAnnotations->get("Column");
+
+			/**
+			 * Check if annotation has the 'column' named parameter
+			 */
+			let columnName = columnAnnotation->getNamedParameter("column");
+
+			if !empty columnName {
+				if typeof orderedColumnMap != "array" {
+					let orderedColumnMap = [], reversedColumnMap = [];
+				}
+
+				let orderedColumnMap[columnName] = property,
+					reversedColumnMap[property] = columnName;
+			}
+		}
+
+		/**
+		 * Store the column map
+		 */
+		return [orderedColumnMap, reversedColumnMap];
+	}
 }

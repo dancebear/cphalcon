@@ -20,6 +20,10 @@
 namespace Phalcon\Logger\Adapter;
 
 use Phalcon\Logger\Exception;
+use Phalcon\Logger\Adapter;
+use Phalcon\Logger\AdapterInterface;
+use Phalcon\Logger\FormatterInterface;
+
 
 /**
  * Phalcon\Logger\Adapter\Stream
@@ -33,7 +37,7 @@ use Phalcon\Logger\Exception;
  *	$logger->error("This is another error");
  *</code>
  */
-class Stream extends \Phalcon\Logger\Adapter implements \Phalcon\Logger\AdapterInterface
+class Stream extends Adapter implements AdapterInterface
 {
 
 	/**
@@ -77,15 +81,13 @@ class Stream extends \Phalcon\Logger\Adapter implements \Phalcon\Logger\AdapterI
 	 *
 	 * @return Phalcon\Logger\Formatter\Line
 	 */
-	public function getFormatter() -> <\Phalcon\Logger\FormatterInterface>
+	public function getFormatter() -> <FormatterInterface>
 	{
-		var formatter;
-
-		let formatter = this->_formatter;
-		if typeof formatter == "object" {
-			let formatter = new \Phalcon\Logger\Formatter\Line(), this->_formatter = formatter;
+		if typeof this->_formatter !== "object" {
+			let this->_formatter = new \Phalcon\Logger\Formatter\Line();
 		}
-		return formatter;
+
+		return this->_formatter;
 	}
 
 	/**
@@ -94,17 +96,18 @@ class Stream extends \Phalcon\Logger\Adapter implements \Phalcon\Logger\AdapterI
 	 * @param string message
 	 * @param int type
 	 * @param int time
+	 * @param array $context
 	 */
-	public function logInternal(message, int type, int time)
+	public function logInternal(string message, int type, int time, array context)
 	{
 		var stream;
 
 		let stream = this->_stream;
-		if !stream {
+		if typeof stream != "resource" {
 			throw new Exception("Cannot send message to the log because it is invalid");
 		}
 
-		fwrite(stream, this->getFormatter()->format(message, type, time));
+		fwrite(stream, this->getFormatter()->format(message, type, time, context));
 	}
 
 	/**

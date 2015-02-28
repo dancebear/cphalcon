@@ -19,6 +19,9 @@
 
 namespace Phalcon;
 
+use Phalcon\FilterInterface;
+use Phalcon\Filter\Exception;
+
 /**
  * Phalcon\Filter
  *
@@ -34,7 +37,7 @@ namespace Phalcon;
  *	$filter->sanitize("!100a019.01a", "float"); // returns "100019.01"
  *</code>
  */
-class Filter implements \Phalcon\FilterInterface
+class Filter implements FilterInterface
 {
 
 	protected _filters;
@@ -46,11 +49,11 @@ class Filter implements \Phalcon\FilterInterface
 	 * @param callable handler
 	 * @return Phalcon\Filter
 	 */
-	public function add(string! name, handler) -> <\Phalcon\Filter>
+	public function add(string! name, handler) -> <Filter>
 	{
 
 		if typeof handler != "object" {
-			throw new \Phalcon\Filter\Exception("Filter must be an object");
+			throw new Exception("Filter must be an object");
 		}
 
 		let this->_filters[name] = handler;
@@ -65,7 +68,7 @@ class Filter implements \Phalcon\FilterInterface
 	 * @param  noRecursive
 	 * @return mixed
 	 */
-	public function sanitize(var value, var filters, boolean noRecursive=false)
+	public function sanitize(var value, var filters, boolean noRecursive = false)
 	{
 		var filter, arrayValue, itemKey, itemValue, sanitizedValue;
 
@@ -83,18 +86,19 @@ class Filter implements \Phalcon\FilterInterface
 						for itemKey, itemValue in value {
 							let arrayValue[itemKey] = this->_sanitize(itemValue, filter);
 						}
-						return arrayValue;
+						let value = arrayValue;
+					} else {
+						let value = this->_sanitize(value, filter);
 					}
-					return this->_sanitize(value, filter);
 				}
 			}
-			return null;
+			return value;
 		}
 
 		/**
 		 * Apply a single filter value
 		 */
-		if typeof value == "array" {
+		if typeof value == "array" && !noRecursive {
 			let sanitizedValue = [];
 			for itemKey, itemValue in value {
 				let sanitizedValue[itemKey] = this->_sanitize(itemValue, filters);
@@ -134,13 +138,16 @@ class Filter implements \Phalcon\FilterInterface
 				/**
 				 * The 'email' filter uses the filter extension
 				 */
-				return filter_var(str_replace("'", "", value), FILTER_SANITIZE_EMAIL);
+				return filter_var(str_replace("'", "", value), constant("FILTER_SANITIZE_EMAIL"));
 
 			case "int":
 				/**
 				 * 'int' filter sanitizes a numeric input
 				 */
 				return filter_var(value, FILTER_SANITIZE_NUMBER_INT);
+
+			case "int!":
+				return intval(value);
 
 			case "string":
 				return filter_var(value, FILTER_SANITIZE_STRING);
@@ -151,8 +158,11 @@ class Filter implements \Phalcon\FilterInterface
 				 */
 				return filter_var(value, FILTER_SANITIZE_NUMBER_FLOAT, ["flags": FILTER_FLAG_ALLOW_FRACTION]);
 
+			case "float!":
+				return doubleval(value);
+
 			case "alphanum":
-				return phalcon_filter_alphanum(value);
+				return preg_replace("/[^A-Za-z0-9]/", "", value);
 
 			case "trim":
 				return trim(value);
@@ -179,7 +189,7 @@ class Filter implements \Phalcon\FilterInterface
 				return strtoupper(value);
 
 			default:
-				throw new \Phalcon\Filter\Exception("Sanitize filter '" . filter . "' is not supported");
+				throw new Exception("Sanitize filter '" . filter . "' is not supported");
 		}
 	}
 
@@ -192,5 +202,4 @@ class Filter implements \Phalcon\FilterInterface
 	{
 		return this->_filters;
 	}
-
 }

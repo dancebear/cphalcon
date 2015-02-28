@@ -19,12 +19,15 @@
 
 namespace Phalcon\Logger\Formatter;
 
+use Phalcon\Logger\Formatter;
+use Phalcon\Logger\FormatterInterface;
+
 /**
  * Phalcon\Logger\Formatter\Syslog
  *
  * Prepares a message to be used in a Syslog backend
  */
-class Syslog extends \Phalcon\Logger\Formatter implements \Phalcon\Logger\FormatterInterface
+class Syslog extends Formatter implements FormatterInterface
 {
 
 	/**
@@ -33,11 +36,14 @@ class Syslog extends \Phalcon\Logger\Formatter implements \Phalcon\Logger\Format
 	 * @param string message
 	 * @param int type
 	 * @param int timestamp
+	 * @param array $context
 	 * @return array
 	 */
-	public function format(message, int type, int timestamp)
+	public function format(message, int type, int timestamp, var context = null) -> array
 	{
+		if typeof context === "array" {
+			let message = this->interpolate(message, context);
+		}
 		return [type, message];
 	}
-
 }

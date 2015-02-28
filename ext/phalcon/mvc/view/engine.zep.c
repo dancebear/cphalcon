@@ -17,6 +17,7 @@
 #include "kernel/memory.h"
 #include "kernel/fcall.h"
 #include "ext/spl/spl_exceptions.h"
+#include "kernel/operators.h"
 
 
 /*
@@ -70,10 +71,6 @@ PHP_METHOD(Phalcon_Mvc_View_Engine, __construct) {
 	}
 
 
-	if (!(zephir_instance_of_ev(view, phalcon_mvc_viewinterface_ce TSRMLS_CC))) {
-		ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(spl_ce_InvalidArgumentException, "Parameter 'view' must be an instance of 'Phalcon\\Mvc\\ViewInterface'", "", 0);
-		return;
-	}
 	_0 = Z_TYPE_P(dependencyInjector) != IS_NULL;
 	if (_0) {
 		_0 = !zephir_instance_of_ev(dependencyInjector, phalcon_diinterface_ce TSRMLS_CC);
@@ -127,8 +124,8 @@ PHP_METHOD(Phalcon_Mvc_View_Engine, partial) {
 		RETURN_MM_NULL();
 	}
 
-	if (unlikely(Z_TYPE_P(partialPath_param) == IS_STRING)) {
-		partialPath = partialPath_param;
+	if (likely(Z_TYPE_P(partialPath_param) == IS_STRING)) {
+		zephir_get_strval(partialPath, partialPath_param);
 	} else {
 		ZEPHIR_INIT_VAR(partialPath);
 		ZVAL_EMPTY_STRING(partialPath);

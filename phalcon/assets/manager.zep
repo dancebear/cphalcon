@@ -19,6 +19,13 @@
 
 namespace Phalcon\Assets;
 
+use Phalcon\Tag;
+use Phalcon\Assets\Resource;
+use Phalcon\Assets\Collection;
+use Phalcon\Assets\Exception;
+use Phalcon\Assets\Resource\Js as ResourceJs;
+use Phalcon\Assets\Resource\Css as ResourceCss;
+
 /**
  * Phalcon\Assets\Manager
  *
@@ -42,7 +49,7 @@ class Manager
 	 *
 	 * @param array options
 	 */
-	public function __construct(options=null)
+	public function __construct(options = null)
 	{
 		if  typeof options == "array" {
 			let this->_options = options;
@@ -55,7 +62,7 @@ class Manager
 	 * @param array options
 	 * @return Phalcon\Assets\Manager
 	 */
-	public function setOptions(array! options) -> <\Phalcon\Assets\Manager>
+	public function setOptions(array! options) -> <Manager>
 	{
 		let this->_options = options;
 		return this;
@@ -77,7 +84,7 @@ class Manager
 	 * @param boolean implicitOutput
 	 * @return Phalcon\Assets\Manager
 	 */
-	public function useImplicitOutput(boolean implicitOutput) -> <\Phalcon\Assets\Manager>
+	public function useImplicitOutput(boolean implicitOutput) -> <Manager>
 	{
 		let this->_implicitOutput = implicitOutput;
 		return this;
@@ -98,9 +105,23 @@ class Manager
 	* @param array attributes
 	* @return Phalcon\Assets\Manager
 	*/
-	public function addCss(string! path, local=true, filter=true, attributes=null)
+	public function addCss(string! path, local = true, filter = true, attributes = null)
 	{
-		this->addResourceByType("css", new \Phalcon\Assets\Resource\Css(path, local, filter, attributes));
+		this->addResourceByType("css", new ResourceCss(path, local, filter, attributes));
+		return this;
+	}
+
+	/**
+	* Adds a inline Css to the 'css' collection
+	*
+	* @param string content
+	* @param boolean filter
+	* @param array attributes
+	* @return Phalcon\Assets\Manager
+	*/
+	public function addInlineCss(string content, filter = true, attributes = null)
+	{
+		this->addInlineCodeByType("css", new \Phalcon\Assets\Inline\Css(content, filter, attributes));
 	}
 
 	/**
@@ -117,9 +138,23 @@ class Manager
 	* @param array attributes
 	* @return Phalcon\Assets\Manager
 	*/
-	public function addJs(string! path, local=true, filter=true, attributes=null)
+	public function addJs(string! path, local = true, filter = true, attributes = null)
 	{
-		this->addResourceByType("js", new \Phalcon\Assets\Resource\Js(path, local, filter, attributes));
+		this->addResourceByType("js", new ResourceJs(path, local, filter, attributes));
+		return this;
+	}
+
+	/**
+	* Adds a inline javascript to the 'js' collection
+	*
+	* @param string content
+	* @param boolean filter
+	* @param array attributes
+	* @return Phalcon\Assets\Manager
+	*/
+	public function addInlineJs(string content, filter = true, attributes = null)
+	{
+		this->addInlineCodeByType("js", new \Phalcon\Assets\Inline\Js(content, filter, attributes));
 	}
 
 	/**
@@ -133,12 +168,12 @@ class Manager
 	 * @param Phalcon\Assets\Resource resource
 	 * @return Phalcon\Assets\Manager
 	 */
-	public function addResourceByType(string! type, <\Phalcon\Assets\Resource> $resource) -> <\Phalcon\Assets\Manager>
+	public function addResourceByType(string! type, <$Resource> $resource) -> <Manager>
 	{
 		var collection;
 
 		if !fetch collection, this->_collections[type] {
-			let collection = new \Phalcon\Assets\Collection();
+			let collection = new Collection();
 			let this->_collections[type] = collection;
 		}
 
@@ -146,6 +181,30 @@ class Manager
 		 * Add the resource to the collection
 		 */
 		collection->add($resource);
+
+		return this;
+	}
+
+	/**
+	 * Adds a inline code by its type
+	 *
+	 * @param string type
+	 * @param Phalcon\Assets\Inline code
+	 * @return Phalcon\Assets\Manager
+	 */
+	public function addInlineCodeByType(string! type, <\Phalcon\Assets\Inline> code) -> <Manager>
+	{
+		var collection;
+
+		if !fetch collection, this->_collections[type] {
+			let collection = new Collection();
+			let this->_collections[type] = collection;
+		}
+
+		/**
+		 * Add the inline code to the collection
+		 */
+		collection->addInline(code);
 
 		return this;
 	}
@@ -160,12 +219,27 @@ class Manager
 	 * @param Phalcon\Assets\Resource $resource
 	 * @return Phalcon\Assets\Manager
 	 */
-	public function addResource(<\Phalcon\Assets\Resource> $resource) -> <\Phalcon\Assets\Manager>
+	public function addResource(<$Resource> $resource) -> <Manager>
 	{
 		/**
 		 * Adds the resource by its type
 		 */
 		this->addResourceByType($resource->getType(), $resource);
+		return this;
+	}
+
+	/**
+	 * Adds a raw inline code to the manager
+	 *
+	 * @param Phalcon\Assets\Inline code
+	 * @return Phalcon\Assets\Manager
+	 */
+	public function addInlineCode(<$Resource> code) -> <Manager>
+	{
+		/**
+		 * Adds the inline code by its type
+		 */
+		this->addInlineCodeByType(code->getType(), code);
 		return this;
 	}
 
@@ -180,7 +254,7 @@ class Manager
 	 * @param Phalcon\Assets\Collection collection
 	 * @return Phalcon\Assets\Manager
 	 */
-	public function set(string! id, <\Phalcon\Assets\Collection> collection) -> <\Phalcon\Assets\Manager>
+	public function set(string! id, <Collection> collection) -> <Manager>
 	{
 		let this->_collections[id] = collection;
 		return this;
@@ -196,12 +270,12 @@ class Manager
 	* @param string id
 	* @return Phalcon\Assets\Collection
 	*/
-	public function get(string! id) -> <\Phalcon\Assets\Collection>
+	public function get(string! id) -> <Collection>
 	{
 		var collection;
 
 		if !fetch collection, this->_collections[id] {
-			throw new \Phalcon\Assets\Exception("The collection does not exist in the manager");
+			throw new Exception("The collection does not exist in the manager");
 		}
 
 		return collection;
@@ -230,7 +304,7 @@ class Manager
 	 *
 	 * @return Phalcon\Assets\Collection
 	 */
-	public function getJs() -> <\Phalcon\Assets\Collection>
+	public function getJs() -> <Collection>
 	{
 		var collection;
 
@@ -238,7 +312,7 @@ class Manager
 		 * Check if the collection does not exist and create an implicit collection
 		 */
 		if !fetch collection, this->_collections["js"] {
-			return new \Phalcon\Assets\Collection();
+			return new Collection();
 		}
 
 		return collection;
@@ -250,12 +324,12 @@ class Manager
 	 * @param string name
 	 * @return Phalcon\Assets\Collection
 	 */
-	public function collection(string name) -> <\Phalcon\Assets\Collection>
+	public function collection(string name) -> <Collection>
 	{
 		var collection;
 
 		if !fetch collection, this->_collections[name] {
-			let collection = new \Phalcon\Assets\Collection();
+			let collection = new Collection();
 			let this->_collections[name] = collection;
 		}
 
@@ -269,10 +343,10 @@ class Manager
 	 * @param callback callback
 	 * @param string type
 	 */
-	public function output(<\Phalcon\Assets\Collection> collection, callback, type)
+	public function output(<Collection> collection, callback, type)
 	{
 		var output, resources, filters, prefix, sourceBasePath = null,
-			targetBasePath, options, collectionSourcePath, completeSourcePath,
+			targetBasePath = null, options, collectionSourcePath, completeSourcePath,
 			collectionTargetPath, completeTargetPath, filteredJoinedContent, join,
 			$resource, filterNeeded, local, sourcePath, targetPath, path, prefixedPath,
 			attributes, parameters, html, useImplicitOutput, content, mustFilter,
@@ -303,7 +377,7 @@ class Manager
 		/**
 		 * Prepare options if the collection must be filtered
 		 */
-		if typeof filters == "array" {
+		if count(filters) {
 
 			let options = this->_options;
 
@@ -315,78 +389,74 @@ class Manager
 				/**
 				 * The source base path is a global location where all resources are located
 				 */
-				if isset options["sourceBasePath"] {
-					let sourceBasePath = options["sourceBasePath"];
-				}
+				fetch sourceBasePath, options["sourceBasePath"];
 
 				/**
 				 * The target base path is a global location where all resources are written
 				 */
-				if isset options["targetBasePath"] {
-					let targetBasePath = options["targetBasePath"];
-				}
+				fetch targetBasePath, options["targetBasePath"];
 			}
 
-                        /**
-                         * Check if the collection have its own source base path
-                         */
-                        let collectionSourcePath = collection->getSourcePath();
+			/**
+			 * Check if the collection have its own source base path
+			 */
+			let collectionSourcePath = collection->getSourcePath();
 
-                        /**
-                         * Concatenate the global base source path with the collection one
-                         */
-                        if collectionSourcePath {
-                                let completeSourcePath = sourceBasePath . collectionSourcePath;
-                        } else {
-                                let completeSourcePath = sourceBasePath;
-                        }
+			/**
+			 * Concatenate the global base source path with the collection one
+			 */
+			if collectionSourcePath {
+				let completeSourcePath = sourceBasePath . collectionSourcePath;
+			} else {
+				let completeSourcePath = sourceBasePath;
+			}
 
-                        /**
-                         * Check if the collection have its own target base path
-                         */
-                        let collectionTargetPath = collection->getTargetPath();
+			/**
+			 * Check if the collection have its own target base path
+			 */
+			let collectionTargetPath = collection->getTargetPath();
 
-                        /**
-                         * Concatenate the global base source path with the collection one
-                         */
-                        if collectionTargetPath {
-                                let completeTargetPath = targetBasePath . collectionTargetPath;
-                        } else {
-                                let completeTargetPath = targetBasePath;
-                        }
+			/**
+			 * Concatenate the global base source path with the collection one
+			 */
+			if collectionTargetPath {
+				let completeTargetPath = targetBasePath . collectionTargetPath;
+			} else {
+				let completeTargetPath = targetBasePath;
+			}
 
-                        /**
-                         * Global filtered content
-                         */
-                        let filteredJoinedContent = null;
+			/**
+			 * Global filtered content
+			 */
+			let filteredJoinedContent = null;
 
-                        /**
-                         * Check if the collection have its own target base path
-                         */
-                        let join = collection->getJoin();
+			/**
+			 * Check if the collection have its own target base path
+			 */
+			let join = collection->getJoin();
 
-                        /**
-                         * Check for valid target paths if the collection must be joined
-                         */
-                        if join {
+			/**
+			 * Check for valid target paths if the collection must be joined
+			 */
+			if join {
+				/**
+				* We need a valid final target path
+				*/
+				if !completeTargetPath {
+					throw new Exception("Path '". completeTargetPath. "' is not a valid target path (1)");
+				}
 
-                                /**
-                                * We need a valid final target path
-                                */
-                                if !completeTargetPath {
-                                        throw new \Phalcon\Assets\Exception("Path '". completeTargetPath. "' is not a valid target path (1)");
-                                }
-
-                                if is_dir(completeTargetPath) {
-                                        throw new \Phalcon\Assets\Exception("Path '". completeTargetPath. "' is not a valid target path (2), is dir.");
-                                }
-                        }
+				if is_dir(completeTargetPath) {
+					throw new Exception("Path '". completeTargetPath. "' is not a valid target path (2), is dir.");
+				}
+			}
 		}
 
 		/**
 		 * walk in resources
 		 */
 		for $resource in resources {
+
 			let filterNeeded = false;
 			let type = $resource->getType();
 
@@ -398,62 +468,60 @@ class Manager
 			/**
 			 * If the collection must not be joined we must print a HTML for each one
 			 */
-			if typeof filters == "array" {
-				if join {
-					if local {
+			if count(filters) {
+				if local {
 
-						/**
-						 * Get the complete path
-						 */
-						let sourcePath = $resource->getRealSourcePath();
+					/**
+					 * Get the complete path
+					 */
+					let sourcePath = $resource->getRealSourcePath();
 
-						/**
-						 * We need a valid source path
-						 */
-						if !sourcePath {
-							let sourcePath = $resource->getPath();
-							throw new \Phalcon\Assets\Exception("Resource '". sourcePath. "' does not have a valid source path");
-						}
-					} else {
-
-						/**
-						 * Get the complete source path
-						 */
+					/**
+					 * We need a valid source path
+					 */
+					if !sourcePath {
 						let sourcePath = $resource->getPath();
-
-						/**
-						 * resources paths are always filtered
-						 */
-						let filterNeeded = true;
+						throw new Exception("Resource '". sourcePath. "' does not have a valid source path");
 					}
+				} else {
 
 					/**
-					 * Get the target path, we need to write the filtered content to a file
+					 * Get the complete source path
 					 */
-					let targetPath = $resource->getRealTargetPath(completeTargetPath);
+					let sourcePath = $resource->getPath();
 
 					/**
-					 * We need a valid final target path
+					 * resources paths are always filtered
 					 */
-					if !targetPath {
-						throw new \Phalcon\Assets\Exception("Resource '". sourcePath. "' does not have a valid target path");
+					let filterNeeded = true;
+				}
+
+				/**
+				 * Get the target path, we need to write the filtered content to a file
+				 */
+				let targetPath = $resource->getRealTargetPath(completeTargetPath);
+
+				/**
+				 * We need a valid final target path
+				 */
+				if !targetPath {
+					throw new Exception("Resource '". sourcePath. "' does not have a valid target path");
+				}
+
+				if join {
+					/**
+					 * Make sure the target path is not the same source path
+					 */
+					if targetPath == sourcePath {
+						throw new Exception("Resource '". targetPath. "' have the same source and target paths");
 					}
 
-					if local {
-						/**
-						 * Make sure the target path is not the same source path
-						 */
-						if targetPath == sourcePath {
-							throw new \Phalcon\Assets\Exception("Resource '". targetPath. "' have the same source and target paths");
-						}
-
-						if file_exists(targetPath) {
-							if compare_mtime(targetPath, sourcePath) {
-								let filterNeeded = true;
-							}
-						} else {
+					if file_exists(targetPath) {
+						if compare_mtime(targetPath, sourcePath) {
 							let filterNeeded = true;
 						}
+					} else {
+						let filterNeeded = true;
 					}
 				}
 			} else {
@@ -525,30 +593,30 @@ class Manager
 						 * Filters must be valid objects
 						 */
 						if typeof filter != "object" {
-							throw new \Phalcon\Assets\Exception("Filter is invalid");
+							throw new Exception("Filter is invalid");
 						}
 
 						/**
 						 * Calls the method 'filter' which must return a filtered version of the content
 						 */
-						let filteredContent = filter->filter(content);
-
-						/**
-						 * Update the joined filtered content
-						 */
-						if join == true {
-							if type == typeCss {
-								if filteredJoinedContent==null {
-									let filteredJoinedContent = filteredContent;
-								} else {
-									let filteredJoinedContent .= filteredContent;
-								}
+						let filteredContent = filter->filter(content),
+							content = filteredContent;
+					}
+					/**
+					 * Update the joined filtered content
+					 */
+					if join == true {
+						if type == typeCss {
+							if filteredJoinedContent == null {
+								let filteredJoinedContent = filteredContent;
 							} else {
-								if filteredJoinedContent==null {
-									let filteredJoinedContent = filteredContent . ";";
-								} else {
-									let filteredJoinedContent .= filteredContent. ";";
-								}
+								let filteredJoinedContent .= filteredContent;
+							}
+						} else {
+							if filteredJoinedContent == null {
+								let filteredJoinedContent = filteredContent . ";";
+							} else {
+								let filteredJoinedContent .= filteredContent. ";";
 							}
 						}
 					}
@@ -558,13 +626,13 @@ class Manager
 					 * Update the joined filtered content
 					 */
 					if join == true {
-
-					} else {
 						if filteredJoinedContent == null {
 							let filteredJoinedContent = content;
 						} else {
-							let filteredContent = content;
+							let filteredJoinedContent .= content;
 						}
+					} else {
+						let filteredContent = content;
 					}
 				}
 
@@ -628,7 +696,7 @@ class Manager
 			}
 		}
 
-		if typeof filters == "array" {
+		if count(filters) {
 
 			if join == true {
 
@@ -650,9 +718,9 @@ class Manager
 				}
 
 				/**
-				 * Gets extra HTML attributes in the resource
+				 * Gets extra HTML attributes in the collection
 				 */
-				let attributes = $resource->getAttributes();
+				let attributes = collection->getAttributes();
 
 				/**
 				 *  Gets local
@@ -691,11 +759,74 @@ class Manager
 	}
 
 	/**
+	 * Traverses a collection and generate its HTML
+	 *
+	 * @param Phalcon\Assets\Collection collection
+	 * @param string type
+	 */
+	public function outputInline(<Collection> collection, type)
+	{
+		var output, html, codes, filters, filter, code, attributes, content, join, joinedContent;
+
+		let output = "",
+			html = "",
+			joinedContent = "";
+
+		let codes = collection->getCodes(),
+			filters = collection->getFilters(),
+			join = collection->getJoin() ;
+
+		if count(codes) {
+			for code in codes {
+				let attributes = code->getAttributes(),
+					content = code->getContent();
+
+				if count(filters) {
+					for filter in filters {
+						/**
+						 * Filters must be valid objects
+						 */
+						if typeof filter != "object" {
+							throw new Exception("Filter is invalid");
+						}
+
+						/**
+						 * Calls the method 'filter' which must return a filtered version of the content
+						 */
+						let content = filter->filter(content);
+					}
+				}
+
+				if join {
+					let joinedContent .= content;
+				} else {
+					let html .= Tag::tagHtml(type, attributes, false, true) . content . Tag::tagHtmlClose(type, true);
+				}
+			}
+
+			if join {
+				let html .= Tag::tagHtml(type, attributes, false, true) . joinedContent . Tag::tagHtmlClose(type, true);
+			}
+
+			/**
+			 * Implicit output prints the content directly
+			 */
+			if this->_implicitOutput == true {
+				echo html;
+			} else {
+				let output .= html;
+			}
+		}
+
+		return output;
+	}
+
+	/**
 	 * Prints the HTML for CSS resources
 	 *
 	 * @param string collectionName
 	 */
-	public function outputCss(collectionName=null)
+	public function outputCss(collectionName = null)
 	{
 		var collection;
 
@@ -709,11 +840,29 @@ class Manager
 	}
 
 	/**
+	 * Prints the HTML for inline CSS
+	 *
+	 * @param string collectionName
+	 */
+	public function outputInlineCss(collectionName = null)
+	{
+		var collection;
+
+		if !collectionName {
+			let collection = this->getCss();
+		} else {
+			let collection = this->get(collectionName);
+		}
+
+		return this->outputInline(collection, "style");
+	}
+
+	/**
 	 * Prints the HTML for JS resources
 	 *
 	 * @param string collectionName
 	 */
-	public function outputJs(collectionName=null)
+	public function outputJs(collectionName = null)
 	{
 		var collection;
 
@@ -724,5 +873,23 @@ class Manager
 		}
 
 		return this->output(collection, ["Phalcon\\Tag", "javascriptInclude"], "js");
+	}
+
+	/**
+	 * Prints the HTML for inline JS
+	 *
+	 * @param string collectionName
+	 */
+	public function outputInlineJs(collectionName = null)
+	{
+		var collection;
+
+		if !collectionName {
+			let collection = this->getJs();
+		} else {
+			let collection = this->get(collectionName);
+		}
+
+		return this->outputInline(collection, "script");
 	}
 }

@@ -131,18 +131,13 @@ PHP_METHOD(Phalcon_Db_Index, __construct) {
 		RETURN_MM_NULL();
 	}
 
-	if (unlikely(Z_TYPE_P(name_param) == IS_STRING)) {
-		name = name_param;
+	if (likely(Z_TYPE_P(name_param) == IS_STRING)) {
+		zephir_get_strval(name, name_param);
 	} else {
 		ZEPHIR_INIT_VAR(name);
 		ZVAL_EMPTY_STRING(name);
 	}
-	if (unlikely(Z_TYPE_P(columns_param) != IS_ARRAY)) {
-		zephir_throw_exception_string(spl_ce_InvalidArgumentException, SL("Parameter 'columns' must be an array") TSRMLS_CC);
-		RETURN_MM_NULL();
-	}
-
-		columns = columns_param;
+	columns = columns_param;
 
 	if (!type) {
 		type = ZEPHIR_GLOBAL(global_null);
@@ -171,29 +166,22 @@ PHP_METHOD(Phalcon_Db_Index, __set_state) {
 	ZEPHIR_MM_GROW();
 	zephir_fetch_params(1, 1, 0, &data_param);
 
-	if (unlikely(Z_TYPE_P(data_param) != IS_ARRAY)) {
-		zephir_throw_exception_string(spl_ce_InvalidArgumentException, SL("Parameter 'data' must be an array") TSRMLS_CC);
-		RETURN_MM_NULL();
-	}
-
-		data = data_param;
+	data = data_param;
 
 
 
 	ZEPHIR_OBS_VAR(indexName);
 	if (!(zephir_array_isset_string_fetch(&indexName, data, SS("_indexName"), 0 TSRMLS_CC))) {
-		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "_indexName parameter is required", "phalcon/db/index.zep", 76);
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "_indexName parameter is required", "phalcon/db/index.zep", 79);
 		return;
 	}
 	ZEPHIR_OBS_VAR(columns);
 	if (!(zephir_array_isset_string_fetch(&columns, data, SS("_columns"), 0 TSRMLS_CC))) {
-		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "_columns parameter is required", "phalcon/db/index.zep", 80);
+		ZEPHIR_THROW_EXCEPTION_DEBUG_STR(phalcon_db_exception_ce, "_columns parameter is required", "phalcon/db/index.zep", 83);
 		return;
 	}
-	if (zephir_array_isset_string(data, SS("_type"))) {
-		ZEPHIR_OBS_VAR(type);
-		zephir_array_fetch_string(&type, data, SL("_type"), PH_NOISY TSRMLS_CC);
-	} else {
+	ZEPHIR_OBS_VAR(type);
+	if (!(zephir_array_isset_string_fetch(&type, data, SS("_type"), 0 TSRMLS_CC))) {
 		ZEPHIR_INIT_NVAR(type);
 		ZVAL_STRING(type, "", 1);
 	}

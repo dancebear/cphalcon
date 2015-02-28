@@ -18,6 +18,12 @@
 
 namespace Phalcon\Http;
 
+use Phalcon\DiInterface;
+use Phalcon\Http\RequestInterface;
+use Phalcon\Di\InjectionAwareInterface;
+use Phalcon\Http\Request\Exception;
+use Phalcon\Http\Request\File;
+
 /**
  * Phalcon\Http\Request
  *
@@ -36,7 +42,7 @@ namespace Phalcon\Http;
  *</code>
  *
  */
-class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAwareInterface
+class Request implements RequestInterface, InjectionAwareInterface
 {
 
 	protected _dependencyInjector;
@@ -50,7 +56,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 *
 	 * @param Phalcon\DiInterface dependencyInjector
 	 */
-	public function setDI(<\Phalcon\DiInterface> dependencyInjector)
+	public function setDI(<DiInterface> dependencyInjector)
 	{
 		let this->_dependencyInjector = dependencyInjector;
 	}
@@ -60,7 +66,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 *
 	 * @return Phalcon\DiInterface
 	 */
-	public function getDI() -> <\Phalcon\DiInterface>
+	public function getDI() -> <DiInterface>
 	{
 		return this->_dependencyInjector;
 	}
@@ -84,7 +90,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 * @param boolean noRecursive
 	 * @return mixed
 	 */
-	public function get(string! name=null, filters=null, defaultValue=null, notAllowEmpty=false, noRecursive=false)
+	public function get(string! name = null, filters = null, defaultValue = null, notAllowEmpty = false, noRecursive = false)
 	{
 		var request, value, filter, dependencyInjector;
 
@@ -94,9 +100,9 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 				if filters !== null {
 					let filter = this->_filter;
 					if typeof filter != "object" {
-						let dependencyInjector = <\Phalcon\Di> this->_dependencyInjector;
+						let dependencyInjector = <DiInterface> this->_dependencyInjector;
 						if typeof dependencyInjector != "object" {
-							throw new \Phalcon\Http\Request\Exception("A dependency injection object is required to access the 'filter' service");
+							throw new Exception("A dependency injection object is required to access the 'filter' service");
 						}
 						let filter = <\Phalcon\Filter> dependencyInjector->getShared("filter");
 						let this->_filter = filter;
@@ -104,7 +110,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 
 					let value = filter->sanitize(value, filters, noRecursive);
 
-					if (empty(value) && notAllowEmpty === true) {
+					if (empty(value) && notAllowEmpty === true) || value === false {
 						return defaultValue;
 					}
 
@@ -143,7 +149,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 * @param boolean noRecursive
 	 * @return mixed
 	 */
-	public function getPost(string! name=null, filters=null, defaultValue=null, notAllowEmpty=false, noRecursive=false)
+	public function getPost(string! name = null, filters = null, defaultValue = null, notAllowEmpty = false, noRecursive = false)
 	{
 		var post, value, filter, dependencyInjector;
 
@@ -153,9 +159,9 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 				if filters !== null {
 					let filter = this->_filter;
 					if typeof filter != "object" {
-						let dependencyInjector = <\Phalcon\Di> this->_dependencyInjector;
+						let dependencyInjector = <DiInterface> this->_dependencyInjector;
 						if typeof dependencyInjector != "object" {
-							throw new \Phalcon\Http\Request\Exception("A dependency injection object is required to access the 'filter' service");
+							throw new Exception("A dependency injection object is required to access the 'filter' service");
 						}
 						let filter = <\Phalcon\Filter> dependencyInjector->getShared("filter");
 						let this->_filter = filter;
@@ -170,11 +176,9 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 					return value;
 
 				} else {
-
-				 	if (empty(value) && notAllowEmpty === true) {
+				 	if empty(value) && notAllowEmpty === true {
 				 		return defaultValue;
 				 	}
-
 					return value;
 
 				}
@@ -206,7 +210,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 * @param boolean noRecursive
 	 * @return mixed
 	 */
-	public function getQuery(string! name=null, filters=null, defaultValue=null, notAllowEmpty=false, noRecursive=false)
+	public function getQuery(string! name = null, filters = null, defaultValue = null, notAllowEmpty = false, noRecursive = false)
 	{
 		var get, value, filter, dependencyInjector;
 
@@ -216,9 +220,9 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 				if filters !== null {
 					let filter = this->_filter;
 					if typeof filter != "object" {
-						let dependencyInjector = <\Phalcon\Di> this->_dependencyInjector;
+						let dependencyInjector = <DiInterface> this->_dependencyInjector;
 						if typeof dependencyInjector != "object" {
-							throw new \Phalcon\Http\Request\Exception("A dependency injection object is required to access the 'filter' service");
+							throw new Exception("A dependency injection object is required to access the 'filter' service");
 						}
 						let filter = <\Phalcon\Filter> dependencyInjector->getShared("filter");
 						let this->_filter = filter;
@@ -314,15 +318,18 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 */
 	public final function getHeader(string! header) -> string
 	{
-		var serverValue, headerValue;
+		var value, name;
 
-		if fetch serverValue, _SERVER[header] {
-			return serverValue;
+		let name = strtoupper(strtr(header, "-", "_"));
+
+		if fetch value, _SERVER[name] {
+			return value;
 		} else {
-			if fetch headerValue, _SERVER["HTTP_" . header] {
-				return headerValue;
+			if fetch value, _SERVER["HTTP_" . name] {
+				return value;
 			}
 		}
+
 		return "";
 	}
 
@@ -349,13 +356,13 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	}
 
 	/**
-	 * Checks whether request has been made using ajax. Checks if $_SERVER['HTTP_X_REQUESTED_WITH']=='XMLHttpRequest'
+	 * Checks whether request has been made using ajax
 	 *
 	 * @return boolean
 	 */
 	public function isAjax() -> boolean
 	{
-		return this->getHeader("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest";
+		return isset _SERVER["HTTP_X_REQUESTED_WITH"] && _SERVER["HTTP_X_REQUESTED_WITH"] === "XMLHttpRequest";
 	}
 
 	/**
@@ -365,13 +372,13 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 */
 	public function isSoapRequested() -> boolean
 	{
-		var server, contentType;
+		var contentType;
 
-		let server = _SERVER;
-		if isset server["HTTP_SOAPACTION"] {
+		if isset _SERVER["HTTP_SOAPACTION"] {
 			return true;
 		} else {
-			if fetch contentType, server["CONTENT_TYPE"] {
+			let contentType = this->getContentType();
+			if !empty contentType {
 				return memstr(contentType, "application/soap+xml");
 			}
 		}
@@ -414,15 +421,16 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	/**
 	 * Gets decoded JSON HTTP raw request body
 	 *
+	 * @param boolean associative
 	 * @return string
 	 */
-	public function getJsonRawBody()
+	public function getJsonRawBody(boolean associative = false)
 	{
 		var rawBody;
 
 		let rawBody = this->getRawBody();
 		if typeof rawBody == "string" {
-			return json_decode(rawBody);
+			return json_decode(rawBody, associative);
 		}
 
 		return false;
@@ -510,12 +518,28 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	}
 
 	/**
+	 * Gets HTTP URI which request has been made
+	 *
+	 * @return string
+	 */
+	public final function getURI() -> string
+	{
+		var requestURI;
+
+		if fetch requestURI, _SERVER["REQUEST_URI"] {
+			return requestURI;
+		}
+
+		return "";
+	}
+
+	/**
 	 * Gets most possible client IPv4 Address. This method search in _SERVER['REMOTE_ADDR'] and optionally in _SERVER['HTTP_X_FORWARDED_FOR']
 	 *
 	 * @param boolean trustForwardedHeader
 	 * @return string|boolean
 	 */
-	public function getClientAddress(boolean trustForwardedHeader=false) -> string | boolean
+	public function getClientAddress(boolean trustForwardedHeader = false) -> string | boolean
 	{
 		var address = null;
 
@@ -600,74 +624,74 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	}
 
 	/**
-	 * Checks whether HTTP method is POST. if _SERVER["REQUEST_METHOD"]=="POST"
+	 * Checks whether HTTP method is POST. if _SERVER["REQUEST_METHOD"]==="POST"
 	 *
 	 * @return boolean
 	 */
 	public function isPost() -> boolean
 	{
-		return this->getMethod() == "POST";
+		return this->getMethod() === "POST";
 	}
 
 	/**
 	 *
-	 * Checks whether HTTP method is GET. if _SERVER["REQUEST_METHOD"]=="GET"
+	 * Checks whether HTTP method is GET. if _SERVER["REQUEST_METHOD"]==="GET"
 	 *
 	 * @return boolean
 	 */
 	public function isGet() -> boolean
 	{
-		return this->getMethod() == "GET";
+		return this->getMethod() === "GET";
 	}
 
 	/**
-	 * Checks whether HTTP method is PUT. if _SERVER["REQUEST_METHOD"]=="PUT"
+	 * Checks whether HTTP method is PUT. if _SERVER["REQUEST_METHOD"]==="PUT"
 	 *
 	 * @return boolean
 	 */
 	public function isPut() -> boolean
 	{
-		return this->getMethod() == "PUT";
+		return this->getMethod() === "PUT";
 	}
 
 	/**
-	 * Checks whether HTTP method is PATCH. if _SERVER["REQUEST_METHOD"]=="PATCH"
+	 * Checks whether HTTP method is PATCH. if _SERVER["REQUEST_METHOD"]==="PATCH"
 	 *
 	 * @return boolean
 	 */
 	public function isPatch() -> boolean
 	{
-		return this->getMethod() == "PATCH";
+		return this->getMethod() === "PATCH";
 	}
 
 	/**
-	 * Checks whether HTTP method is HEAD. if _SERVER["REQUEST_METHOD"]=="HEAD"
+	 * Checks whether HTTP method is HEAD. if _SERVER["REQUEST_METHOD"]==="HEAD"
 	 *
 	 * @return boolean
 	 */
 	public function isHead() -> boolean
 	{
-		return this->getMethod() == "HEAD";
+		return this->getMethod() === "HEAD";
 	}
 
 	/**
-	 * Checks whether HTTP method is DELETE. if _SERVER["REQUEST_METHOD"]=="DELETE"
+	 * Checks whether HTTP method is DELETE. if _SERVER["REQUEST_METHOD"]==="DELETE"
 	 *
 	 * @return boolean
 	 */
 	public function isDelete() -> boolean
 	{
-		return this->getMethod() == "DELETE";
+		return this->getMethod() === "DELETE";
 	}
 
 	/**
-	 * Checks whether HTTP method is OPTIONS. if _SERVER["REQUEST_METHOD"]=="OPTIONS"
+	 * Checks whether HTTP method is OPTIONS. if _SERVER["REQUEST_METHOD"]==="OPTIONS"
 	 *
 	 * @return boolean
 	 */
 	public function isOptions() -> boolean
 	{
-		return this->getMethod() == "OPTIONS";
+		return this->getMethod() === "OPTIONS";
 	}
 
 	/**
@@ -676,7 +700,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 * @param boolean onlySuccessful
 	 * @return boolean
 	 */
-	public function hasFiles(boolean onlySuccessful=false) -> long
+	public function hasFiles(boolean onlySuccessful = false) -> long
 	{
 		var files, file, error;
 		int numberFiles = 0;
@@ -735,49 +759,85 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 * @param boolean notErrored
 	 * @return Phalcon\Http\Request\File[]
 	 */
-	public function getUploadedFiles(boolean notErrored=false) -> <Phalcon\Http\Request\File[]>
+	public function getUploadedFiles(boolean notErrored = false) -> <File[]>
 	{
-		var superFiles, file, files, error, subFiles, subFile;
+		var superFiles, prefix, input, smoothInput, files, file, dataFile;
 
 		let superFiles = _FILES;
-		if count(superFiles) {
-			let files = [];
-			for file in superFiles {
-				if notErrored {
-					if typeof file["name"] == "array" {
-						let subFiles = [];
-						for subFile in file {
-							if !fetch error, subFile["error"] {
-								let error = true;
-							}
-							if !error {
-								let subFiles[] = new \Phalcon\Http\Request\File(subFile);
-							}
-						}
-						let files[] = subFiles;
-					} else {
-						if !fetch error, file["error"] {
-							let error = true;
-						}
-						if !error {
-							let files[] = new \Phalcon\Http\Request\File(file);
+
+		let files = [];
+
+		if (count(superFiles) > 0) {
+
+			for prefix, input in superFiles {
+				if (typeof input["name"] == "array") {
+					let smoothInput = this->smoothFiles(input["name"], input["type"], input["tmp_name"], input["size"], input["error"], prefix);
+
+					for file in smoothInput {
+						if (notErrored == false || file["error"] == UPLOAD_ERR_OK) {
+							let dataFile = [
+								"name": file["name"],
+								"type": file["type"],
+								"tmp_name": file["tmp_name"],
+								"size": file["size"],
+								"error": file["error"]
+							];
+
+							let files[] = new File(dataFile, file["key"]);
 						}
 					}
 				} else {
-					if typeof file["name"] == "array" {
-						let subFiles = [];
-						for subFile in file {
-							let subFiles[] = new \Phalcon\Http\Request\File(subFile);
-						}
-						let files[] = subFiles;
-					} else {
-						let files[] = new \Phalcon\Http\Request\File(file);
+					if (notErrored == false || input["error"] == UPLOAD_ERR_OK) {
+						let files[] = new File(input, prefix);
 					}
 				}
 			}
-			return files;
 		}
-		return [];
+
+		return files;
+	}
+
+	/**
+	 * smooth out $_FILES to have plain array with all files uploaded
+	 *
+	 * @param array names
+	 * @param array types
+	 * @param array tmp_names
+	 * @param array sizes
+	 * @param array errors
+	 * @return array
+	 */
+	protected function smoothFiles(array! names, array! types, array! tmp_names, array! sizes, array! errors, string prefix) -> array
+	{
+		var idx, name, file, files, parentFiles, p;
+
+		let files = [];
+
+		for idx, name in names {
+			let p = prefix . "." . idx;
+
+			if typeof name == "string" {
+
+				let files[] = [
+					"name": name,
+					"type": types[idx],
+					"tmp_name": tmp_names[idx],
+					"size": sizes[idx],
+					"error": errors[idx],
+					"key": p
+				];
+			}
+
+			if typeof name == "array" {
+				let parentFiles = this->smoothFiles(names[idx], types[idx], tmp_names[idx], sizes[idx], errors[idx], p);
+
+				for file in parentFiles {
+					let files[] = file;
+				}
+			}
+		}
+
+		return files;
 	}
 
 	/**
@@ -787,14 +847,23 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 */
 	public function getHeaders() -> array
 	{
-		var headers, key, value;
+		var name, value, headers, contentHeaders;
 
 		let headers = [];
-		for key, value in _SERVER {
-			if starts_with(key, "HTTP_") {
-				let headers[str_replace("HTTP_", "", key)] = value;
+		let contentHeaders = ["CONTENT_TYPE": true, "CONTENT_LENGTH": true];
+
+		for name, value in _SERVER {
+			if starts_with(name, "HTTP_") {
+				let name = ucwords(strtolower(str_replace("_", " ", substr(name, 5)))),
+					name = str_replace(" ", "-", name);
+				let headers[name] = value;
+			} elseif isset(contentHeaders[name]) {
+				let name = ucwords(strtolower(str_replace("_", " ", name))),
+					name = str_replace(" ", "-", name);
+				let headers[name] = value;
 			}
 		}
+
 		return headers;
 	}
 
@@ -819,26 +888,31 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 * @param string name
 	 * @return array
 	 */
-	protected function _getQualityHeader(string! serverIndex, string! name) -> string
+	protected function _getQualityHeader(string! serverIndex, string! name) -> array
 	{
-		double quality;
-		var returnedParts, part, headerParts, qualityPart;
+		var returnedParts, part, headerParts, headerPart, split;
 
 		let returnedParts = [];
-		for part in preg_split("/,\\s*/", this->getServer(serverIndex)) {
+		for part in preg_split("/,\\s*/", this->getServer(serverIndex), -1, PREG_SPLIT_NO_EMPTY) {
 
-			let headerParts = explode(";", part);
-			if fetch qualityPart, headerParts[1] {
-				let quality = (double) substr(qualityPart, 2);
-			} else {
-				let quality = 1.0;
+			let headerParts = [];
+			for headerPart in preg_split("/\s*;\s*/", trim(part), -1, PREG_SPLIT_NO_EMPTY) {
+				if strpos(headerPart, "=") !== false {
+					let split = explode("=", headerPart, 2);
+					if split[0] === "q" {
+						let headerParts["quality"] = (double) split[1];
+					} else {
+						let headerParts[split[0]] = split[1];
+					}
+				} else {
+					let headerParts[name] = headerPart;
+					let headerParts["quality"] = 1.0;
+				}
 			}
 
-			let returnedParts[] = [
-				name      : headerParts[0],
-				"quality" : quality
-			];;
+			let returnedParts[] = headerParts;
 		}
+
 		return returnedParts;
 	}
 
@@ -876,6 +950,29 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	}
 
 	/**
+	 * Gets content type which request has been made
+	 *
+	 * @return mixed
+	 */
+	public function getContentType()
+	{
+		var contentType;
+
+		if fetch contentType, _SERVER["CONTENT_TYPE"] {
+			return contentType;
+		} else {
+			/**
+			 * @see https://bugs.php.net/bug.php?id=66606
+			 */
+			if fetch contentType, _SERVER["HTTP_CONTENT_TYPE"] {
+				return contentType;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Gets array with mime/types and their quality accepted by the browser/client from _SERVER["HTTP_ACCEPT"]
 	 *
 	 * @return array
@@ -888,9 +985,9 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	/**
 	 * Gets best mime/type accepted by the browser/client from _SERVER["HTTP_ACCEPT"]
 	 *
-	 * @return array
+	 * @return string
 	 */
-	public function getBestAccept()
+	public function getBestAccept() -> string
 	{
 		return this->_getBestQuality(this->getAcceptableContent(), "accept");
 	}
@@ -920,7 +1017,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 	 *
 	 * @return array
 	 */
-	public function getLanguages()
+	public function getLanguages() -> array
 	{
 		return this->_getQualityHeader("HTTP_ACCEPT_LANGUAGE", "language");
 	}
@@ -966,7 +1063,7 @@ class Request implements \Phalcon\Http\RequestInterface, \Phalcon\Di\InjectionAw
 		array auth;
 
 		let auth = [];
-		if fetch digest, _SERVER["PHP_AUTH_USER"] {
+		if fetch digest, _SERVER["PHP_AUTH_DIGEST"] {
 			let matches = [];
 			if !preg_match_all("#(\\w+)=(['\"]?)([^'\" ,]+)\\2#", digest, matches, 2) {
 				return auth;

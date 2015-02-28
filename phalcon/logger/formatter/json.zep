@@ -19,12 +19,15 @@
 
 namespace Phalcon\Logger\Formatter;
 
+use Phalcon\Logger\Formatter;
+use Phalcon\Logger\FormatterInterface;
+
 /**
  * Phalcon\Logger\Formatter\Json
  *
  * Formats messages using JSON encoding
  */
-class Json extends \Phalcon\Logger\Formatter implements \Phalcon\Logger\FormatterInterface
+class Json extends Formatter implements FormatterInterface
 {
 
 	/**
@@ -33,15 +36,19 @@ class Json extends \Phalcon\Logger\Formatter implements \Phalcon\Logger\Formatte
 	 * @param string message
 	 * @param int type
 	 * @param int timestamp
+	 * @param array $context
 	 * @return string
 	 */
-	public function format(string message, int type, int timestamp) -> string
+	public function format(string message, int type, int timestamp, var context = null) -> string
 	{
+		if typeof context === "array" {
+			let message = this->interpolate(message, context);
+		}
+
 		return json_encode([
 			"type": this->getTypeString(type),
 			"message": message,
 			"timestamp": timestamp
 		]);
 	}
-
 }

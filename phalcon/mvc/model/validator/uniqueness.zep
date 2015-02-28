@@ -21,6 +21,11 @@ namespace Phalcon\Mvc\Model\Validator;
 
 use Phalcon\Mvc\Model;
 
+use Phalcon\Mvc\ModelInterface;
+use Phalcon\Mvc\Model\Exception;
+use Phalcon\Mvc\Model\Validator;
+use Phalcon\Mvc\Model\ValidatorInterface;
+
 /**
  * Phalcon\Mvc\Model\Validator\Uniqueness
  *
@@ -47,7 +52,7 @@ use Phalcon\Mvc\Model;
  *</code>
  *
  */
-class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Model\ValidatorInterface
+class Uniqueness extends Validator implements ValidatorInterface
 {
 	/**
 	 * Executes the validator
@@ -55,7 +60,7 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 	 * @param Phalcon\Mvc\ModelInterface record
 	 * @return boolean
 	 */
-	public function validate(<\Phalcon\Mvc\ModelInterface> record) -> boolean
+	public function validate(<ModelInterface> record) -> boolean
 	{
 		var field, dependencyInjector, metaData, message, bindTypes, bindDataTypes,
 			columnMap, conditions, bindParams, number, composeField, columnField,
@@ -93,7 +98,7 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 				 */
 				if typeof columnMap == "array" {
 					if !fetch columnField, columnMap[composeField] {
-						throw new \Phalcon\Mvc\Model\Exception("Column '" . composeField . "' isn't part of the column map");
+						throw new Exception("Column '" . composeField . "' isn't part of the column map");
 					}
 				} else {
 					let columnField = composeField;
@@ -103,7 +108,7 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 				 * Some database systems require that we pass the values using bind casting
 				 */
 				if !fetch bindType, bindDataTypes[columnField] {
-					throw new \Phalcon\Mvc\Model\Exception("Column '" . columnField . "' isn't part of the table columns");
+					throw new Exception("Column '" . columnField . "' isn't part of the table columns");
 				}
 
 				/**
@@ -123,7 +128,7 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 			 */
 			if typeof columnMap == "array" {
 				if !fetch columnField, columnMap[field] {
-					throw new \Phalcon\Mvc\Model\Exception("Column '" . field . "' isn't part of the column map");
+					throw new Exception("Column '" . field . "' isn't part of the column map");
 				}
 			} else {
 				let columnField = field;
@@ -133,7 +138,7 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 			 * Some database systems require that we pass the values using bind casting
 			 */
 			if !fetch bindType, bindDataTypes[columnField] {
-				throw new \Phalcon\Mvc\Model\Exception("Column '" . columnField . "' isn't part of the table columns");
+				throw new Exception("Column '" . columnField . "' isn't part of the table columns");
 			}
 
 			/**
@@ -163,7 +168,7 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 			for primaryField in metaData->getPrimaryKeyAttributes(record) {
 
 				if !fetch bindType, bindDataTypes[primaryField] {
-					throw new \Phalcon\Mvc\Model\Exception("Column '".primaryField."' isn't part of the table columns");
+					throw new Exception("Column '" . primaryField . "' isn't part of the table columns");
 				}
 
 				/**
@@ -171,7 +176,7 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 				 */
 				if typeof columnMap == "array" {
 					if !fetch attributeField, columnMap[primaryField] {
-						throw new \Phalcon\Mvc\Model\Exception("Column '".primaryField."' isn't part of the column map");
+						throw new Exception("Column '" . primaryField . "' isn't part of the column map");
 					}
 				} else {
 					let attributeField = primaryField;
@@ -200,7 +205,7 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 		let className = get_class(record);
 
 		/**
-		 * Check using a standard count
+		 * Check if the record does exist using a standard count
 		 */
 		if {className}::count(params) != 0 {
 
@@ -212,9 +217,9 @@ class Uniqueness extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Mo
 			if empty message {
 				if typeof field == "array" {
 					let replacePairs = [":fields": join(", ", field)];
-					let message = "Value of fields :fields are already present in another record";
+					let message = "Value of fields: :fields are already present in another record";
 				} else {
-					let message = "Value of field :field is already present in another record";
+					let message = "Value of field: ':field' is already present in another record";
 				}
 			}
 

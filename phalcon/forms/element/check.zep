@@ -19,12 +19,15 @@
 
 namespace Phalcon\Forms\Element;
 
+use Phalcon\Forms\Element;
+use Phalcon\Forms\ElementInterface;
+
 /**
  * Phalcon\Forms\Element\Check
  *
  * Component INPUT[type=check] for forms
  */
-class Check extends \Phalcon\Forms\Element implements \Phalcon\Forms\ElementInterface
+class Check extends Element implements ElementInterface
 {
 
 	/**
@@ -33,9 +36,8 @@ class Check extends \Phalcon\Forms\Element implements \Phalcon\Forms\ElementInte
 	 * @param array attributes
 	 * @return string
 	 */
-	public function render(var attributes=null) -> string
+	public function render(var attributes = null) -> string
 	{
 		return \Phalcon\Tag::checkField(this->prepareAttributes(attributes, true));
 	}
-
 }

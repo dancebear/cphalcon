@@ -69,7 +69,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 *
 	 * @return Phalcon\DiInterface
 	 */
-	public function getDI() -> <DiInterface>|null
+	public function getDI() -> <DiInterface> | null
 	{
 		var dependencyInjector;
 		if fetch dependencyInjector, this->_params["di"] {
@@ -158,7 +158,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param string type
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function join(string! model, conditions=null, alias=null, type=null) -> <Criteria>
+	public function join(string! model, conditions = null, alias = null, type = null) -> <Criteria>
 	{
 		var join, mergedJoins, currentJoins;
 
@@ -185,16 +185,14 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 *	$criteria->innerJoin('Robots');
 	 *	$criteria->innerJoin('Robots', 'r.id = RobotsParts.robots_id');
 	 *	$criteria->innerJoin('Robots', 'r.id = RobotsParts.robots_id', 'r');
-	 *	$criteria->innerJoin('Robots', 'r.id = RobotsParts.robots_id', 'r', 'LEFT');
 	 *</code>
 	 *
 	 * @param string model
 	 * @param string conditions
 	 * @param string alias
-	 * @param string type
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function innerJoin(string! model, conditions=null, alias=null) -> <Criteria>
+	public function innerJoin(string! model, conditions = null, alias = null) -> <Criteria>
 	{
 		var join, mergedJoins, currentJoins;
 
@@ -226,7 +224,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param string alias
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function leftJoin(string! model, conditions=null, alias=null) -> <Criteria>
+	public function leftJoin(string! model, conditions = null, alias = null) -> <Criteria>
 	{
 		var join, mergedJoins, currentJoins;
 
@@ -258,7 +256,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param string alias
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function rightJoin(string! model, conditions=null, alias=null) -> <Criteria>
+	public function rightJoin(string! model, conditions = null, alias = null) -> <Criteria>
 	{
 		var join, mergedJoins, currentJoins;
 
@@ -286,7 +284,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param array bindTypes
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function where(string! conditions, bindParams=null, bindTypes=null) -> <Criteria>
+	public function where(string! conditions, bindParams = null, bindTypes = null) -> <Criteria>
 	{
 		var currentBindParams, mergedParams, mergedParamsTypes, currentBindTypes;
 
@@ -327,7 +325,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param array bindTypes
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function addWhere(conditions, bindParams=null, bindTypes=null) -> <Criteria>
+	public function addWhere(conditions, bindParams = null, bindTypes = null) -> <Criteria>
 	{
 		return this->andWhere(conditions, bindParams, bindTypes);
 	}
@@ -340,7 +338,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param array bindTypes
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function andWhere(string! conditions, bindParams=null, bindTypes=null) -> <Criteria>
+	public function andWhere(string! conditions, bindParams = null, bindTypes = null) -> <Criteria>
 	{
 		var currentBindParams, mergedParams, mergedParamsTypes, currentBindTypes, params, currentConditions;
 
@@ -386,7 +384,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param array bindTypes
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function orWhere(string! conditions, bindParams=null, bindTypes=null) -> <Criteria>
+	public function orWhere(string! conditions, bindParams = null, bindTypes = null) -> <Criteria>
 	{
 		var currentBindParams, mergedParams, mergedParamsTypes, currentBindTypes, params, currentConditions;
 
@@ -641,7 +639,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param int offset
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function limit(int limit, var offset=null)
+	public function limit(int limit, var offset = null)
 	{
 
 		if typeof offset == "null" {
@@ -659,7 +657,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param boolean forUpdate
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function forUpdate(boolean forUpdate=true) -> <Criteria>
+	public function forUpdate(boolean forUpdate = true) -> <Criteria>
 	{
 		let this->_params["for_update"] = forUpdate;
 		return this;
@@ -671,9 +669,22 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 	 * @param boolean sharedLock
 	 * @return Phalcon\Mvc\Model\Criteria
 	 */
-	public function sharedLock(boolean sharedLock=true) -> <Criteria>
+	public function sharedLock(boolean sharedLock = true) -> <Criteria>
 	{
 		let this->_params["shared_lock"] = sharedLock;
+		return this;
+	}
+
+	/**
+	 * Sets the cache options in the criteria
+	 * This method replaces all previously set cache options
+	 *
+	 * @param array options
+	 * @return Phalcon\Mvc\Model\CriteriaInterface
+	 */
+	public function cache(array! cache) -> <Criteria>
+	{
+		let this->_params["cache"] = cache;
 		return this;
 	}
 
@@ -809,6 +820,7 @@ class Criteria implements CriteriaInterface, InjectionAwareInterface
 			criteria->bind(bind);
 		}
 
+		criteria->setModelName(modelName);
 		return criteria;
 	}
 

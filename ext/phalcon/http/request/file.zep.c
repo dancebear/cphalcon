@@ -12,12 +12,13 @@
 #include <Zend/zend_interfaces.h>
 
 #include "kernel/main.h"
-#include "kernel/exception.h"
-#include "kernel/array.h"
 #include "kernel/object.h"
+#include "kernel/array.h"
 #include "kernel/memory.h"
 #include "kernel/fcall.h"
+#include "kernel/operators.h"
 #include "ext/spl/spl_exceptions.h"
+#include "kernel/exception.h"
 
 
 /*
@@ -74,8 +75,35 @@ ZEPHIR_INIT_CLASS(Phalcon_Http_Request_File) {
 
 	zend_declare_property_null(phalcon_http_request_file_ce, SL("_realType"), ZEND_ACC_PROTECTED TSRMLS_CC);
 
+	zend_declare_property_null(phalcon_http_request_file_ce, SL("_error"), ZEND_ACC_PROTECTED TSRMLS_CC);
+
+	zend_declare_property_null(phalcon_http_request_file_ce, SL("_key"), ZEND_ACC_PROTECTED TSRMLS_CC);
+
+	zend_declare_property_null(phalcon_http_request_file_ce, SL("_extension"), ZEND_ACC_PROTECTED TSRMLS_CC);
+
 	zend_class_implements(phalcon_http_request_file_ce TSRMLS_CC, 1, phalcon_http_request_fileinterface_ce);
 	return SUCCESS;
+
+}
+
+PHP_METHOD(Phalcon_Http_Request_File, getError) {
+
+
+	RETURN_MEMBER(this_ptr, "_error");
+
+}
+
+PHP_METHOD(Phalcon_Http_Request_File, getKey) {
+
+
+	RETURN_MEMBER(this_ptr, "_key");
+
+}
+
+PHP_METHOD(Phalcon_Http_Request_File, getExtension) {
+
+
+	RETURN_MEMBER(this_ptr, "_extension");
 
 }
 
@@ -86,18 +114,35 @@ ZEPHIR_INIT_CLASS(Phalcon_Http_Request_File) {
  */
 PHP_METHOD(Phalcon_Http_Request_File, __construct) {
 
-	zval *file, *name, *tempName, *size, *type;
+	int ZEPHIR_LAST_CALL_STATUS;
+	zephir_nts_static zephir_fcall_cache_entry *_2 = NULL, *_4 = NULL;
+	zval *file_param = NULL, *key = NULL, *name, *tempName, *size, *type, *error, _0 = zval_used_for_init, *_1 = NULL, *_3 = NULL;
+	zval *file = NULL;
 
-	zephir_fetch_params(0, 1, 0, &file);
+	ZEPHIR_MM_GROW();
+	zephir_fetch_params(1, 1, 1, &file_param, &key);
 
+	file = file_param;
 
-
-	if (Z_TYPE_P(file) != IS_ARRAY) {
-		ZEPHIR_THROW_EXCEPTION_DEBUG_STRW(phalcon_http_request_exception_ce, "Phalcon\\Http\\Request\\File requires a valid uploaded file", "phalcon/http/request/file.zep", 67);
-		return;
+	if (!key) {
+		key = ZEPHIR_GLOBAL(global_null);
 	}
-	if (zephir_array_isset_string_fetch(&name, file, SS("name"), 1 TSRMLS_CC)) {
+
+
+	ZEPHIR_OBS_VAR(name);
+	if (zephir_array_isset_string_fetch(&name, file, SS("name"), 0 TSRMLS_CC)) {
 		zephir_update_property_this(this_ptr, SL("_name"), name TSRMLS_CC);
+		ZEPHIR_SINIT_VAR(_0);
+		ZVAL_STRING(&_0, "PATHINFO_EXTENSION", 0);
+		ZEPHIR_CALL_FUNCTION(&_1, "defined", &_2, &_0);
+		zephir_check_call_status();
+		if (zephir_is_true(_1)) {
+			ZEPHIR_SINIT_NVAR(_0);
+			ZVAL_LONG(&_0, 4);
+			ZEPHIR_CALL_FUNCTION(&_3, "pathinfo", &_4, name, &_0);
+			zephir_check_call_status();
+			zephir_update_property_this(this_ptr, SL("_extension"), _3 TSRMLS_CC);
+		}
 	}
 	if (zephir_array_isset_string_fetch(&tempName, file, SS("tmp_name"), 1 TSRMLS_CC)) {
 		zephir_update_property_this(this_ptr, SL("_tmp"), tempName TSRMLS_CC);
@@ -108,6 +153,13 @@ PHP_METHOD(Phalcon_Http_Request_File, __construct) {
 	if (zephir_array_isset_string_fetch(&type, file, SS("type"), 1 TSRMLS_CC)) {
 		zephir_update_property_this(this_ptr, SL("_type"), type TSRMLS_CC);
 	}
+	if (zephir_array_isset_string_fetch(&error, file, SS("error"), 1 TSRMLS_CC)) {
+		zephir_update_property_this(this_ptr, SL("_error"), error TSRMLS_CC);
+	}
+	if (zephir_is_true(key)) {
+		zephir_update_property_this(this_ptr, SL("_key"), key TSRMLS_CC);
+	}
+	ZEPHIR_MM_RESTORE();
 
 }
 
@@ -189,6 +241,32 @@ PHP_METHOD(Phalcon_Http_Request_File, getRealType) {
 }
 
 /**
+ * Checks whether the file has been uploaded via Post.
+ *
+ * @return boolean
+ */
+PHP_METHOD(Phalcon_Http_Request_File, isUploadedFile) {
+
+	zephir_nts_static zephir_fcall_cache_entry *_2 = NULL;
+	zend_bool _0;
+	int ZEPHIR_LAST_CALL_STATUS;
+	zval *tmp = NULL, *_1 = NULL;
+
+	ZEPHIR_MM_GROW();
+
+	ZEPHIR_CALL_METHOD(&tmp, this_ptr, "gettempname", NULL);
+	zephir_check_call_status();
+	_0 = Z_TYPE_P(tmp) == IS_STRING;
+	if (_0) {
+		ZEPHIR_CALL_FUNCTION(&_1, "is_uploaded_file", &_2, tmp);
+		zephir_check_call_status();
+		_0 = zephir_is_true(_1);
+	}
+	RETURN_MM_BOOL(_0);
+
+}
+
+/**
  * Moves the temporary file to a destination within the application
  *
  * @param string destination
@@ -209,8 +287,8 @@ PHP_METHOD(Phalcon_Http_Request_File, moveTo) {
 		RETURN_MM_NULL();
 	}
 
-	if (unlikely(Z_TYPE_P(destination_param) == IS_STRING)) {
-		destination = destination_param;
+	if (likely(Z_TYPE_P(destination_param) == IS_STRING)) {
+		zephir_get_strval(destination, destination_param);
 	} else {
 		ZEPHIR_INIT_VAR(destination);
 		ZVAL_EMPTY_STRING(destination);

@@ -19,6 +19,11 @@
 
 namespace Phalcon\Mvc\Model\Validator;
 
+use Phalcon\Mvc\ModelInterface;
+use Phalcon\Mvc\Model\Validator;
+use Phalcon\Mvc\Model\ValidatorInterface;
+use Phalcon\Mvc\Model\Exception;
+
 /**
  * Phalcon\Mvc\Model\Validator\ExclusionIn
  *
@@ -44,7 +49,7 @@ namespace Phalcon\Mvc\Model\Validator;
  *	}
  *</code>
  */
-class Exclusionin extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\Model\ValidatorInterface
+class Exclusionin extends Validator implements ValidatorInterface
 {
 
 	/**
@@ -53,26 +58,26 @@ class Exclusionin extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\M
 	 * @param Phalcon\Mvc\ModelInterface record
 	 * @return boolean
 	 */
-	public function validate(<\Phalcon\Mvc\ModelInterface> record) -> boolean
+	public function validate(<ModelInterface> record) -> boolean
 	{
 		var field, domain, value, message;
 
 		let field = this->getOption("field");
 
-		if field != "string" {
-			throw new \Phalcon\Mvc\Model\Exception("Field name must be a string");
+		if typeof field != "string" {
+			throw new Exception("Field name must be a string");
 		}
 
 		/**
 		 * The "domain" option must be a valid array of not allowed values
 		 */
 		if this->isSetOption("domain") === false {
-			throw new \Phalcon\Mvc\Model\Exception("The option 'domain' is required by this validator");
+			throw new Exception("The option 'domain' is required by this validator");
 		}
 
 		let domain = this->getOption("domain");
 		if typeof domain != "array" {
-			throw new \Phalcon\Mvc\Model\Exception("Option 'domain' must be an array");
+			throw new Exception("Option 'domain' must be an array");
 		}
 
 		let value = record->readAttribute(field);
@@ -90,7 +95,7 @@ class Exclusionin extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\M
 			 */
 			let message = this->getOption("message");
 			if empty message {
-				let message = "Value of field :field must not be part of list: :domain";
+				let message = "Value of field ':field' must not be part of list: :domain";
 			}
 
 			this->appendMessage(strtr(message, [":field": field, ":domain":  join(", ", domain)]), field, "Exclusion");
@@ -99,5 +104,4 @@ class Exclusionin extends \Phalcon\Mvc\Model\Validator implements \Phalcon\Mvc\M
 
 		return true;
 	}
-
 }

@@ -19,8 +19,11 @@
 
 namespace Phalcon\Mvc;
 
+use Phalcon\Di\InjectionAwareInterface;
+use Phalcon\DiInterface;
 use Phalcon\Mvc\Router\Route;
 use Phalcon\Mvc\Router\Exception;
+use Phalcon\Http\RequestInterface;
 
 /**
  * Phalcon\Mvc\Router
@@ -48,7 +51,7 @@ use Phalcon\Mvc\Router\Exception;
  *</code>
  *
  */
-class Router
+class Router implements InjectionAwareInterface,RouterInterface
 {
 	protected _dependencyInjector;
 
@@ -92,15 +95,12 @@ class Router
 
 	/**
 	 * Phalcon\Mvc\Router constructor
-	 *
-	 * @param boolean defaultRoutes
 	 */
-	public function __construct(boolean defaultRoutes=true)
+	public function __construct(boolean defaultRoutes = true)
 	{
-		var routes;
-
-		let routes = [];
-		if defaultRoutes === true {
+		array routes = [];
+		
+		if defaultRoutes {
 
 			// Two routes are added by default to match /:controller/:action and
 			// /:controller/:action/:params
@@ -123,28 +123,22 @@ class Router
 
 	/**
 	 * Sets the dependency injector
-	 *
-	 * @param Phalcon\DiInterface dependencyInjector
 	 */
-	public function setDI(<\Phalcon\DiInterface> dependencyInjector)
+	public function setDI(<DiInterface> dependencyInjector)
 	{
 		let this->_dependencyInjector = dependencyInjector;
 	}
 
 	/**
 	 * Returns the internal dependency injector
-	 *
-	 * @return Phalcon\DiInterface
 	 */
-	public function getDI() -> <\Phalcon\DiInterface>
+	public function getDI() -> <DiInterface>
 	{
 		return this->_dependencyInjector;
 	}
 
 	/**
 	 * Get rewrite info. This info is read from $_GET['_url']. This returns '/' if the rewrite information cannot be read
-	 *
-	 * @return string
 	 */
 	public function getRewriteUri() -> string
 	{
@@ -182,7 +176,6 @@ class Router
 	 *</code>
 	 *
 	 * @param string uriSource
-	 * @return Phalcon\Mvc\Router
 	 */
 	public function setUriSource(var uriSource) -> <Router>
 	{
@@ -192,9 +185,6 @@ class Router
 
 	/**
 	 * Set whether router must remove the extra slashes in the handled routes
-	 *
-	 * @param boolean remove
-	 * @return Phalcon\Mvc\Router
 	 */
 	public function removeExtraSlashes(boolean remove) -> <Router>
 	{
@@ -204,9 +194,6 @@ class Router
 
 	/**
 	 * Sets the name of the default namespace
-	 *
-	 * @param string namespaceName
-	 * @return Phalcon\Mvc\Router
 	 */
 	public function setDefaultNamespace(string! namespaceName) -> <Router>
 	{
@@ -216,9 +203,6 @@ class Router
 
 	/**
 	 * Sets the name of the default module
-	 *
-	 * @param string moduleName
-	 * @return Phalcon\Mvc\Router
 	 */
 	public function setDefaultModule(string! moduleName) -> <Router>
 	{
@@ -228,9 +212,6 @@ class Router
 
 	/**
 	 * Sets the default controller name
-	 *
-	 * @param string controllerName
-	 * @return Phalcon\Mvc\Router
 	 */
 	public function setDefaultController(string! controllerName) -> <Router>
 	{
@@ -240,9 +221,6 @@ class Router
 
 	/**
 	 * Sets the default action name
-	 *
-	 * @param string actionName
-	 * @return Phalcon\Mvc\Router
 	 */
 	public function setDefaultAction(string! actionName) -> <Router>
 	{
@@ -260,17 +238,10 @@ class Router
 	 *		'action' => 'index'
 	 * ));
 	 *</code>
-	 *
-	 * @param array defaults
-	 * @return Phalcon\Mvc\Router
 	 */
-	public function setDefaults(defaults) -> <Router>
+	public function setDefaults(array! defaults) -> <Router>
 	{
 		var namespaceName, module, controller, action, params;
-
-		if typeof defaults != "array" {
-			throw new Exception("Defaults must be an array");
-		}
 
 		// Set a default namespace
 		if fetch namespaceName, defaults["namespace"] {
@@ -310,10 +281,8 @@ class Router
 	 * //Manually passing an URL
 	 * $router->handle('/posts/edit/1');
 	 *</code>
-	 *
-	 * @param string uri
 	 */
-	public function handle(uri=null)
+	public function handle(string uri = null)
 	{
 		var realUri, request, currentHostName, routeFound, parts,
 			params, matches, notFoundPaths,
@@ -374,7 +343,7 @@ class Router
 						throw new Exception("A dependency injection container is required to access the 'request' service");
 					}
 
-					let request = <\Phalcon\Http\RequestInterface> dependencyInjector->getShared("request");
+					let request = <RequestInterface> dependencyInjector->getShared("request");
 				}
 
 				/**
@@ -396,12 +365,12 @@ class Router
 				 */
 				if request === null {
 
-					let dependencyInjector = <\Phalcon\DiInterface> this->_dependencyInjector;
+					let dependencyInjector = <DiInterface> this->_dependencyInjector;
 					if typeof dependencyInjector != "object" {
 						throw new Exception("A dependency injection container is required to access the 'request' service");
 					}
 
-					let request = <\Phalcon\Http\RequestInterface> dependencyInjector->getShared("request");
+					let request = <RequestInterface> dependencyInjector->getShared("request");
 				}
 
 				/**
@@ -637,12 +606,11 @@ class Router
 	 * $router->add('/about', 'About::index');
 	 *</code>
 	 *
-	 * @param string pattern
 	 * @param string/array paths
 	 * @param string httpMethods
 	 * @return Phalcon\Mvc\Router\Route
 	 */
-	public function add(string! pattern, paths=null, httpMethods=null) -> <Route>
+	public function add(string! pattern, paths = null, httpMethods = null) -> <Route>
 	{
 		var route;
 
@@ -657,11 +625,9 @@ class Router
 	/**
 	 * Adds a route to the router that only match if the HTTP method is GET
 	 *
-	 * @param string pattern
 	 * @param string/array paths
-	 * @return Phalcon\Mvc\Router\Route
 	 */
-	public function addGet(string! pattern, paths=null) -> <Route>
+	public function addGet(string! pattern, paths = null) -> <Route>
 	{
 		return this->add(pattern, paths, "GET");
 	}
@@ -669,11 +635,9 @@ class Router
 	/**
 	 * Adds a route to the router that only match if the HTTP method is POST
 	 *
-	 * @param string pattern
 	 * @param string/array paths
-	 * @return Phalcon\Mvc\Router\Route
 	 */
-	public function addPost(string! pattern, paths=null) -> <Route>
+	public function addPost(string! pattern, var paths = null) -> <Route>
 	{
 		return this->add(pattern, paths, "POST");
 	}
@@ -681,11 +645,9 @@ class Router
 	/**
 	 * Adds a route to the router that only match if the HTTP method is PUT
 	 *
-	 * @param string pattern
 	 * @param string/array paths
-	 * @return Phalcon\Mvc\Router\Route
 	 */
-	public function addPut(string! pattern, paths=null) -> <Route>
+	public function addPut(string! pattern, paths = null) -> <Route>
 	{
 		return this->add(pattern, paths, "PUT");
 	}
@@ -697,7 +659,7 @@ class Router
 	 * @param string/array paths
 	 * @return Phalcon\Mvc\Router\Route
 	 */
-	public function addPatch(string! pattern, paths=null)
+	public function addPatch(string! pattern, paths = null)
 	{
 		return this->add(pattern, paths, "PATCH");
 	}
@@ -709,7 +671,7 @@ class Router
 	 * @param string/array paths
 	 * @return Phalcon\Mvc\Router\Route
 	 */
-	public function addDelete(string! pattern, paths=null) -> <Route>
+	public function addDelete(string! pattern, paths = null) -> <Route>
 	{
 		return this->add(pattern, paths, "DELETE");
 	}
@@ -721,7 +683,7 @@ class Router
 	 * @param string/array paths
 	 * @return Phalcon\Mvc\Router\Route
 	 */
-	public function addOptions(string! pattern, paths=null) -> <Route>
+	public function addOptions(string! pattern, paths = null) -> <Route>
 	{
 		return this->add(pattern, paths, "OPTIONS");
 	}
@@ -733,7 +695,7 @@ class Router
 	 * @param string/array paths
 	 * @return Phalcon\Mvc\Router\Route
 	 */
-	public function addHead(string! pattern, paths=null) -> <Route>
+	public function addHead(string! pattern, paths = null) -> <Route>
 	{
 		return this->add(pattern, paths, "HEAD");
 	}
@@ -793,14 +755,11 @@ class Router
 	 * Set a group of paths to be returned when none of the defined routes are matched
 	 *
 	 * @param array paths
-	 * @return Phalcon\Mvc\Router
 	 */
 	public function notFound(var paths) -> <Router>
 	{
-		if typeof paths != "array" {
-			if typeof paths != "string" {
-				throw new Exception("The not-found paths must be an array or string");
-			}
+		if typeof paths != "array" && typeof paths != "string" {
+			throw new Exception("The not-found paths must be an array or string");
 		}
 		let this->_notFoundPaths = paths;
 		return this;
@@ -816,8 +775,6 @@ class Router
 
 	/**
 	 * Returns the processed namespace name
-	 *
-	 * @return string
 	 */
 	public function getNamespaceName() -> string
 	{
@@ -826,8 +783,6 @@ class Router
 
 	/**
 	 * Returns the processed module name
-	 *
-	 * @return string
 	 */
 	public function getModuleName() -> string
 	{
@@ -836,8 +791,6 @@ class Router
 
 	/**
 	 * Returns the processed controller name
-	 *
-	 * @return string
 	 */
 	public function getControllerName() -> string
 	{
@@ -846,8 +799,6 @@ class Router
 
 	/**
 	 * Returns the processed action name
-	 *
-	 * @return string
 	 */
 	public function getActionName() -> string
 	{
@@ -856,18 +807,14 @@ class Router
 
 	/**
 	 * Returns the processed parameters
-	 *
-	 * @return array
 	 */
-	public function getParams()
+	public function getParams() -> array
 	{
 		return this->_params;
 	}
 
 	/**
 	 * Returns the route that matchs the handled URI
-	 *
-	 * @return Phalcon\Mvc\Router\Route
 	 */
 	public function getMatchedRoute() -> <Route>
 	{
@@ -876,18 +823,14 @@ class Router
 
 	/**
 	 * Returns the sub expressions in the regular expression matched
-	 *
-	 * @return array
 	 */
-	public function getMatches()
+	public function getMatches() -> array
 	{
 		return this->_matches;
 	}
 
 	/**
 	 * Checks if the router macthes any of the defined routes
-	 *
-	 * @return bool
 	 */
 	public function wasMatched() -> boolean
 	{
@@ -906,9 +849,6 @@ class Router
 
 	/**
 	 * Returns a route object by its id
-	 *
-	 * @param int id
-	 * @return Phalcon\Mvc\Router\Route
 	 */
 	public function getRouteById(var id) -> <Route> | boolean
 	{
@@ -919,14 +859,12 @@ class Router
 				return route;
 			}
 		}
+
 		return false;
 	}
 
 	/**
 	 * Returns a route object by its name
-	 *
-	 * @param string name
-	 * @return Phalcon\Mvc\Router\Route | boolean
 	 */
 	public function getRouteByName(string! name) -> <Route> | boolean
 	{
@@ -940,4 +878,11 @@ class Router
 		return false;
 	}
 
+	/**
+	 * Returns whether controller name should not be mangled
+	 */
+	public function isExactControllerName() -> boolean
+	{
+		return true;
+	}
 }

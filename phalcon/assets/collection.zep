@@ -19,6 +19,11 @@
 
 namespace Phalcon\Assets;
 
+use Phalcon\Assets\Resource;
+use Phalcon\Assets\FilterInterface;
+use Phalcon\Assets\Inline;
+use Phalcon\Assets\Resource\Css as ResourceCss;
+
 /**
  * Phalcon\Assets\Collection
  *
@@ -27,27 +32,29 @@ namespace Phalcon\Assets;
 class Collection implements \Countable, \Iterator
 {
 
-	protected _prefix { get, set };
+	protected _prefix { get };
 
-	protected _local = true { get, set };
+	protected _local = true { get };
 
-	protected _resources { get, set };
+	protected _resources = [] { get };
 
-	protected _position { get, set };
+	protected _codes = [] { get };
 
-	protected _filters { get, set };
+	protected _position { get };
 
-	protected _attributes { get, set };
+	protected _filters = [] { get };
 
-	protected _join = true { get, set };
+	protected _attributes = [] { get };
 
-	protected _targetUri { get, set };
+	protected _join = true { get };
 
-	protected _targetPath { get, set };
+	protected _targetUri { get };
 
-	protected _targetLocal = true { get, set };
+	protected _targetPath { get };
 
-	protected _sourcePath { get, set };
+	protected _targetLocal = true { get };
+
+	protected _sourcePath { get };
 
 	/**
 	 * Adds a resource to the collection
@@ -55,9 +62,21 @@ class Collection implements \Countable, \Iterator
 	 * @param Phalcon\Assets\Resource resource
 	 * @return Phalcon\Assets\Collection
 	 */
-	public function add(<\Phalcon\Assets\Resource> $resource) -> <\Phalcon\Assets\Collection>
+	public function add(<$Resource> $resource) -> <Collection>
 	{
 		let this->_resources[] = $resource;
+		return this;
+	}
+
+	/**
+	 * Adds a inline code to the collection
+	 *
+	 * @param Phalcon\Assets\Inline code
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function addInline(<$Inline> code) -> <Collection>
+	{
+		let this->_codes[] = code;
 		return this;
 	}
 
@@ -70,7 +89,7 @@ class Collection implements \Countable, \Iterator
 	 * @param array attributes
 	 * @return Phalcon\Assets\Collection
 	 */
-	public function addCss(string! path, var local = false, boolean filter = false, attributes = null) -> <\Phalcon\Assets\Collection>
+	public function addCss(string! path, var local = null, boolean filter = false, attributes = null) -> <Collection>
 	{
 		var collectionLocal, collectionAttributes;
 
@@ -78,7 +97,7 @@ class Collection implements \Countable, \Iterator
 			let filter = true;
 		}
 
-		if typeof local == "bool" {
+		if typeof local == "boolean" {
 			let collectionLocal = local;
 		} else {
 			let collectionLocal = this->_local;
@@ -90,8 +109,34 @@ class Collection implements \Countable, \Iterator
 			let collectionAttributes = this->_attributes;
 		}
 
-		let this->_resources[] = new \Phalcon\Assets\Resource\Css(path, collectionLocal, filter, collectionAttributes);
+		let this->_resources[] = new ResourceCss(path, collectionLocal, filter, collectionAttributes);
 
+		return this;
+	}
+
+	/**
+	 * Adds a inline CSS to the collection
+	 *
+	 * @param string content
+	 * @param boolean filter
+	 * @param array attributes
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function addInlineCss(string content, boolean filter = false, attributes = null) -> <Collection>
+	{
+		var collectionAttributes;
+
+		if !filter {
+			let filter = true;
+		}
+
+		if typeof attributes == "array" {
+			let collectionAttributes = attributes;
+		} else {
+			let collectionAttributes = this->_attributes;
+		}
+
+		let this->_codes[] = new \Phalcon\Assets\Inline\Css(content, filter, collectionAttributes);
 		return this;
 	}
 
@@ -104,7 +149,7 @@ class Collection implements \Countable, \Iterator
 	 * @param array attributes
 	 * @return Phalcon\Assets\Collection
 	 */
-	public function addJs(string! path, boolean local = false, boolean filter = false, attributes = null) -> <\Phalcon\Assets\Collection>
+	public function addJs(string! path, var local = null, boolean filter = false, attributes = null) -> <Collection>
 	{
 		var collectionLocal, collectionAttributes;
 
@@ -112,7 +157,7 @@ class Collection implements \Countable, \Iterator
 			let filter = true;
 		}
 
-		if typeof local == "bool" {
+		if typeof local == "boolean" {
 			let collectionLocal = local;
 		} else {
 			let collectionLocal = this->_local;
@@ -125,6 +170,34 @@ class Collection implements \Countable, \Iterator
 		}
 
 		let this->_resources[] = new \Phalcon\Assets\Resource\Js(path, collectionLocal, filter, collectionAttributes);
+
+		return this;
+	}
+
+	/**
+	 * Adds a inline javascript to the collection
+	 *
+	 * @param string content
+	 * @param boolean filter
+	 * @param array attributes
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function addInlineJs(string content, boolean filter = false, attributes = null) -> <Collection>
+	{
+		var collectionAttributes;
+
+		if !filter {
+			let filter = true;
+		}
+
+
+		if typeof attributes == "array" {
+			let collectionAttributes = attributes;
+		} else {
+			let collectionAttributes = this->_attributes;
+		}
+
+		let this->_codes[] = new \Phalcon\Assets\Inline\Js(content, filter, collectionAttributes);
 
 		return this;
 	}
@@ -152,7 +225,7 @@ class Collection implements \Countable, \Iterator
 	 *
 	 * @return Phalcon\Assets\Resource
 	 */
-	public function current() -> <\Phalcon\Assets\Resource>
+	public function current() -> <$Resource>
 	{
 		var $resource;
 		fetch $resource, this->_resources[this->_position];
@@ -189,12 +262,108 @@ class Collection implements \Countable, \Iterator
 	}
 
 	/**
+	 * Sets the target path of the file for the filtered/join output
+	 *
+	 * @param string $targetPath
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function setTargetPath(string! targetPath) -> <Collection>
+	{
+		let this->_targetPath = targetPath;
+		return this;
+	}
+
+	/**
+	 * Sets a base source path for all the resources in this collection
+	 *
+	 * @param string $sourcePath
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function setSourcePath(string! sourcePath) -> <Collection>
+	{
+		let this->_sourcePath = sourcePath;
+		return this;
+	}
+
+	/**
+	 * Sets a target uri for the generated HTML
+	 *
+	 * @param string $targetUri
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function setTargetUri(string! targetUri) -> <Collection>
+	{
+		let this->_targetUri = targetUri;
+		return this;
+	}
+
+	/**
+	 * Sets a common prefix for all the resources
+	 *
+	 * @param string $prefix
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function setPrefix(string! prefix) -> <Collection>
+	{
+		let this->_prefix = prefix;
+		return this;
+	}
+
+	/**
+	 * Sets if the collection uses local resources by default
+	 *
+	 * @param boolean $local
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function setLocal(boolean! local) -> <Collection>
+	{
+		let this->_local = local;
+		return this;
+	}
+
+	/**
+	 * Sets extra HTML attributes
+	 *
+	 * @param array $attributes
+	 * @return $this
+	 */
+	public function setAttributes(array! attributes) -> <Collection>
+	{
+		let this->_attributes = attributes;
+		return this;
+	}
+
+	/**
+	 * Sets an array of filters in the collection
+	 *
+	 * @param array $filters
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function setFilters(array! filters) -> <Collection>
+	{
+		let this->_filters = filters;
+		return this;
+	}
+
+	/**
+	 * Sets the target local
+	 *
+	 * @param boolean $targetLocal
+	 * @return Phalcon\Assets\Collection
+	 */
+	public function setTargetLocal(boolean! targetLocal) -> <Collection>
+	{
+		let this->_targetLocal = targetLocal;
+		return this;
+	}
+
+	/**
 	 * Sets if all filtered resources in the collection must be joined in a single result file
 	 *
 	 * @param boolean join
 	 * @return Phalcon\Assets\Collection
 	 */
-	public function join(boolean join) -> <\Phalcon\Assets\Collection>
+	public function join(boolean join) -> <Collection>
 	{
 		let this->_join = join;
 		return this;
@@ -230,12 +399,12 @@ class Collection implements \Countable, \Iterator
 	/**
 	 * Adds a filter to the collection
 	 *
-	 * @param Phalcon\Assets\FilterInterface $filter
+	 * @param Phalcon\Assets\FilterInterface filter
 	 * @return Phalcon\Assets\Collection
 	 */
-	public function addFilter(<\Phalcon\Assets\FilterInterface> $filter) -> <\Phalcon\Assets\Collection>
+	public function addFilter(<FilterInterface> filter) -> <Collection>
 	{
-		let this->_filters[] = $filter;
+		let this->_filters[] = filter;
 		return this;
 	}
 }

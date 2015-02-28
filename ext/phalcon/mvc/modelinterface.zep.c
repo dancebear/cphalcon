@@ -43,14 +43,6 @@ ZEPHIR_INIT_CLASS(Phalcon_Mvc_ModelInterface) {
 }
 
 /**
- * Phalcon\Mvc\Model constructor
- *
- * @param Phalcon\DiInterface dependencyInjector
- * @param Phalcon\Mvc\Model\ManagerInterface modelsManager
- */
-ZEPHIR_DOC_METHOD(Phalcon_Mvc_ModelInterface, __construct);
-
-/**
  * Sets a transaction related to the Model instance
  *
  * @param Phalcon\Mvc\Model\TransactionInterface transaction
@@ -161,10 +153,10 @@ ZEPHIR_DOC_METHOD(Phalcon_Mvc_ModelInterface, cloneResultMap);
 /**
  * Assigns values to a model from an array returning a new model
  *
- * @param Phalcon\Mvc\Model base
+ * @param Phalcon\Mvc\ModelInterface base
  * @param array data
  * @param int dirtyState
- * @return Phalcon\Mvc\Model
+ * @return Phalcon\Mvc\ModelInterface
  */
 ZEPHIR_DOC_METHOD(Phalcon_Mvc_ModelInterface, cloneResult);
 
@@ -368,6 +360,4 @@ ZEPHIR_DOC_METHOD(Phalcon_Mvc_ModelInterface, getRelated);
  * @param array columnMap
  */
 ZEPHIR_DOC_METHOD(Phalcon_Mvc_ModelInterface, setSnapshotData);
-
-ZEPHIR_DOC_METHOD(Phalcon_Mvc_ModelInterface, getDI);
 

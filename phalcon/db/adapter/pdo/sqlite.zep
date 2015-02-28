@@ -22,6 +22,11 @@ namespace Phalcon\Db\Adapter\Pdo;
 
 use Phalcon\Db\Column;
 use Phalcon\Db\Exception;
+use Phalcon\Db\Reference;
+use Phalcon\Db\ReferenceInterface;
+use Phalcon\Db\Index;
+use Phalcon\Db\IndexInterface;
+use Phalcon\Db\AdapterInterface;
 
 /**
  * Phalcon\Db\Adapter\Pdo\Sqlite
@@ -37,7 +42,7 @@ use Phalcon\Db\Exception;
  *
  * </code>
  */
-class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInterface
+class Sqlite extends \Phalcon\Db\Adapter\Pdo implements AdapterInterface
 {
 
 	protected _type = "sqlite";
@@ -51,7 +56,7 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 	 * @param array $descriptor
 	 * @return boolean
 	 */
-	public function connect(descriptor=null)
+	public function connect(descriptor = null)
 	{
 		var dbname;
 
@@ -81,11 +86,10 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 	 * @param string schema
 	 * @return Phalcon\Db\Column[]
 	 */
-	public function describeColumns(string table, string schema=null)
+	public function describeColumns(string table, string schema = null)
 	{
 		var columns, columnType, field, definition,
-			oldColumn, sizePattern, matches, matchOne, matchTwo, columnName,
-			attribute;
+			oldColumn, sizePattern, matches, matchOne, matchTwo, columnName;
 
 		let oldColumn = null,
 			sizePattern = "#\\(([0-9]+)(?:,\\s*([0-9]+))*\\)#";
@@ -122,13 +126,14 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 				/**
 				 * Smallint/Bigint/Integers/Int are int
 				 */
-				if memstr(columnType, "int") {
+				if memstr(columnType, "int") || memstr(columnType, "INT") {
+
 					let definition["type"] = Column::TYPE_INTEGER,
 						definition["isNumeric"] = true,
-						definition["bindType"] = Column::BIND_PARAM_INT,
-						attribute = field[5];
-					if attribute === true {
-							let definition["autoIncrement"] = true;
+						definition["bindType"] = Column::BIND_PARAM_INT;
+
+					if field[5] {
+						let definition["autoIncrement"] = true;
 					}
 					break;
 				}
@@ -223,10 +228,10 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 				let matches = null;
 				if preg_match(sizePattern, columnType, matches) {
 					if fetch matchOne, matches[1] {
-						let definition["size"] = (int)matchOne;
+						let definition["size"] = (int) matchOne;
 					}
 					if fetch matchTwo, matches[2] {
-						let definition["scale"] = (int)matchTwo;
+						let definition["scale"] = (int) matchTwo;
 					}
 				}
 			}
@@ -262,6 +267,14 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 			}
 
 			/**
+			 * Check if the column is default values
+			 * When field is empty default value is null
+			 */
+			if strcasecmp(field[4], "null") != 0 && field[4] != "" {
+				let definition["default"] = preg_replace("/^'|'$/", "", field[4]);
+			}
+
+			/**
 			 * Every route is stored as a Phalcon\Db\Column
 			 */
 			let columnName = field[1],
@@ -279,7 +292,7 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 	 * @param	string schema
 	 * @return	Phalcon\Db\IndexInterface[]
 	 */
-	public function describeIndexes(table, schema=null)
+	public function describeIndexes(table, schema = null) -> <IndexInterface>
 	{
 		var indexes, index, keyName, indexObjects, name, indexColumns, columns,
 			describe_index;
@@ -303,7 +316,7 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 
 		let indexObjects = [];
 		for name, indexColumns in indexes {
-			let indexObjects[name] = new \Phalcon\Db\Index(name, indexColumns);
+			let indexObjects[name] = new Index(name, indexColumns);
 		}
 
 		return indexObjects;
@@ -316,7 +329,7 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 	 * @param	string schema
 	 * @return	Phalcon\Db\ReferenceInterface[]
 	 */
-	public function describeReferences(table, schema=null)
+	public function describeReferences(table, schema=null) -> <ReferenceInterface[]>
 	{
 		var references, reference,
 			arrayReference, constraintName, referenceObjects, name,
@@ -353,7 +366,7 @@ class Sqlite extends \Phalcon\Db\Adapter\Pdo implements \Phalcon\Db\AdapterInter
 
 		let referenceObjects = [];
 		for name, arrayReference in references {
-			let referenceObjects[name] = new \Phalcon\Db\Reference(name, [
+			let referenceObjects[name] = new Reference(name, [
 				"referencedSchema"	: arrayReference["referencedSchema"],
 				"referencedTable"	: arrayReference["referencedTable"],
 				"columns"			: arrayReference["columns"],
